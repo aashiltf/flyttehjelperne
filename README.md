@@ -1,86 +1,64 @@
 # Flyttehjelpen
 
-A modern, production-ready template for building full-stack React applications using React Router.
+En mobiltilpasset demo som lager en personlig flyttetidslinje fra boligtype,
+husstand, flyttedato og valgfrie behov. Bygget med React 19, React Router 8,
+TypeScript og Tailwind CSS 4.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
-
-## Features
-
-- 🚀 React Router SPA mode
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
-
-## Getting Started
-
-### Installation
-
-Install the dependencies:
+## Kjør lokalt
 
 ```bash
 npm install
-```
-
-### Development
-
-Start the development server with HMR:
-
-```bash
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+Åpne http://localhost:5173. Velg «Prøv en eksempelreise» for en ferdig utfylt
+samboerflytting fra leid til eid bolig, med innflytting 35 dager frem i tid.
 
-## Building for Production
+## Demoens funksjoner
 
-Create a production build:
+- Tre kartleggingssteg, med manuell adresse eller adresseforslag fra Kartverket.
+- Personlig tidslinje på `/tidslinje`, med anbefalte tidspunkter og neste steg.
+- Oppgavesvar, avkryssinger og statusene gjenstår, venter, ferdig og gjelder ikke.
+- Filtrering og fremdrift basert på relevante oppgaver.
+- Et generisk forsikringsrelatert partnertilbud, tydelig merket demo.
+- «Start på nytt» for å slette planen eller laste eksempelreisen på nytt.
+
+## Lagring og avgrensning
+
+Kartlegging (inkludert adresser), sist besøkte kartleggingssteg, oppgavesvar,
+avkryssinger og statuser lagres i `localStorage` under `flyttehjelpen:v1`.
+Data valideres ved innlesing. Lagring skjer først etter innlesing, ved endringer.
+Oppgaver som blir irrelevante etter endret kartlegging skjules, men beholder
+status hvis de senere kommer tilbake. Endringer i dato flytter anbefalte
+tidspunkter uten å nullstille svar. «Start på nytt» sletter den lokale planen.
+
+Planen deles ikke mellom nettlesere eller enheter. Det finnes ingen innlogging,
+backend, søknadsinnsending eller kjøpsintegrasjon. Kartverkets adressesøk mottar
+søkestrengen når brukeren skriver i et adressefelt; manuelt skrevet adresse
+godtas også hvis tjenesten ikke svarer. Ingen miljøvariabler kreves.
+
+Oppgaveinnhold er veiledende demoeksempler. Anbefalte tidspunkter er ikke
+juridiske frister. Dekning og aktuelle krav må avklares hos riktig tilbyder
+eller offentlig tjeneste.
+
+## Kvalitetssjekker
+
+Node.js 22.18+ anbefales (testene bruker innebygd TypeScript-støtte).
 
 ```bash
+npm test
+npm run typecheck
 npm run build
 ```
 
-## Deployment
+Manuell gjennomgang: kartlegg alene/samboer, velg leid/eid, lag planen,
+åpne forsikringssteget, endre svar og avkryssinger, oppdater siden, fullfør og
+angre oppgaver, prøv filtrene og endre kartlegging. Kontroller mobilbredde,
+tastaturnavigasjon, ukjent dato, manuell adresse og tilbakestilling.
 
-### Docker Deployment
+## Publisering
 
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 8080:80 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### Static Deployment
-
-This app is a client-rendered SPA. Deploy the contents of `build/client/` to any
-static host. Configure the host to fall back to `index.html` for unknown paths
-so direct navigation to client-side routes works.
-
-Build the app with:
-
-```
-└── build/
-    └── client/    # Static SPA output
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+`react-router.config.ts` bruker `ssr: false`. Publiser `build/client/` til en
+statisk host med fallback til `index.html` for klientruter som `/tidslinje`.
+Nettleser-API-er brukes kun i effekter og hendelser, slik at bygg/prerendering
+ikke krever `window`, `document` eller `localStorage`.

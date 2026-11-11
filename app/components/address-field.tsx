@@ -1,0 +1,72 @@
+import { useEffect, useId, useRef, useState } from 'react';
+import { Icon } from './ui';
+
+type Address = { adressetekst: string; postnummer: string; poststed: string };
+
+export function AddressField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const id = useId();
+  const [suggestions, setSuggestions] = useState<Address[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'empty' | 'error'>('idle');
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const selected = useRef(value);
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    const request = ++requestId.current;
+    setSuggestions([]);
+    setActive(-1);
+    setStatus('idle');
+    if (value.trim().length < 3 || value === selected.current || !open) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setStatus('loading');
+      try {
+        const response = await fetch(`https://ws.geonorge.no/adresser/v1/sok?fuzzy=true&treffPerSide=5&sok=${encodeURIComponent(value)}`, { signal: controller.signal });
+        if (!response.ok) throw new Error('Adressesøk feilet');
+        const data: unknown = await response.json();
+        if (typeof data !== 'object' || data === null || !('adresser' in data) || !Array.isArray(data.adresser)) throw new Error('Ugyldig adressesvar');
+        const addresses = data.adresser.filter((address: unknown): address is Address => typeof address === 'object' && address !== null && 'adressetekst' in address && typeof address.adressetekst === 'string' && 'postnummer' in address && typeof address.postnummer === 'string' && 'poststed' in address && typeof address.poststed === 'string');
+        if (request === requestId.current) { setSuggestions(addresses); setStatus(addresses.length ? 'idle' : 'empty'); }
+      } catch {
+        if (!controller.signal.aborted && request === requestId.current) setStatus('error');
+      }
+    }, 300);
+    return () => { window.clearTimeout(timeout); controller.abort(); };
+  }, [value, open]);
+
+  function choose(address: Address) {
+    const text = `${address.adressetekst}, ${address.postnummer} ${address.poststed}`;
+    selected.current = text;
+    onChange(text);
+    setOpen(false);
+    setSuggestions([]);
+  }
+
+  return <div className="relative">
+    <label htmlFor={id} className="field-label">{label}</label>
+    <div className="relative">
+      <Icon name="pin" className="pointer-events-none absolute left-3.5 top-3.5 text-slate-400" />
+      <input id={id} className="text-input pl-11" value={value} maxLength={200} required autoComplete="off" placeholder="Gateadresse og sted"
+        role="combobox" aria-expanded={open && suggestions.length > 0} aria-autocomplete="list" aria-controls={`${id}-suggestions`} aria-activedescendant={active >= 0 ? `${id}-option-${active}` : undefined} aria-describedby={`${id}-help`}
+        onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
+        onChange={(event) => { onChange(event.target.value); setOpen(true); }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') { setOpen(false); setActive(-1); }
+          if (suggestions.length && open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+            event.preventDefault();
+            setActive((index) => event.key === 'ArrowDown' ? (index + 1) % suggestions.length : (index <= 0 ? suggestions.length - 1 : index - 1));
+          }
+          if (event.key === 'Enter' && open && active >= 0 && suggestions[active]) { event.preventDefault(); choose(suggestions[active]); }
+        }} />
+    </div>
+    {open && suggestions.length > 0 && <ul id={`${id}-suggestions`} role="listbox" aria-label={`Adresseforslag for ${label}`} className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+      {suggestions.map((address, index) => <li key={`${address.adressetekst}-${address.postnummer}`} id={`${id}-option-${index}`} role="option" aria-selected={active === index} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(address)} className={`cursor-pointer rounded-lg px-3 py-2.5 text-sm hover:bg-teal-50 ${active === index ? 'bg-teal-50' : ''}`}>
+        <span className="block font-semibold">{address.adressetekst}</span><span className="text-slate-500">{address.postnummer} {address.poststed}</span>
+      </li>)}
+    </ul>}
+    <p id={`${id}-help`} role="status" className="mt-2 text-xs leading-5 text-slate-500">
+      {status === 'loading' ? 'Søker etter adresser …' : status === 'error' ? 'Adressesøket er utilgjengelig. Du kan skrive adressen selv.' : status === 'empty' ? 'Ingen forslag funnet. Du kan bruke adressen du har skrevet.' : 'Adresseforslag fra Kartverket. Du kan også skrive adressen selv.'}
+    </p>
+  </div>;
+}
