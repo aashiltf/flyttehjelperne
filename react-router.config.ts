@@ -1,7 +1,6 @@
 import type { Config } from "@react-router/dev/config";
 
 export default {
-  // Config options...
-  // Server-side render by default, to enable SPA mode set this to `false`
-  ssr: true,
+  // Disable runtime server rendering and emit a static SPA entry point.
+  ssr: false,
 } satisfies Config;

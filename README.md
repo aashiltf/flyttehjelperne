@@ -1,4 +1,4 @@
-# Welcome to React Router!
+# Flyttehjelpen
 
 A modern, production-ready template for building full-stack React applications using React Router.
 
@@ -6,7 +6,7 @@ A modern, production-ready template for building full-stack React applications u
 
 ## Features
 
-- 🚀 Server-side rendering
+- 🚀 React Router SPA mode
 - ⚡️ Hot Module Replacement (HMR)
 - 📦 Asset bundling and optimization
 - 🔄 Data loading and mutations
@@ -52,7 +52,7 @@ To build and run using Docker:
 docker build -t my-app .
 
 # Run the container
-docker run -p 3000:3000 my-app
+docker run -p 8080:80 my-app
 ```
 
 The containerized application can be deployed to any platform that supports Docker, including:
@@ -64,18 +64,17 @@ The containerized application can be deployed to any platform that supports Dock
 - Fly.io
 - Railway
 
-### DIY Deployment
+### Static Deployment
 
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
+This app is a client-rendered SPA. Deploy the contents of `build/client/` to any
+static host. Configure the host to fall back to `index.html` for unknown paths
+so direct navigation to client-side routes works.
 
-Make sure to deploy the output of `npm run build`
+Build the app with:
 
 ```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+└── build/
+    └── client/    # Static SPA output
 ```
 
 ## Styling

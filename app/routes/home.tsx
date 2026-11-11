@@ -3,8 +3,8 @@ import { Welcome } from "../welcome/welcome";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "Flyttehjelpen – hvor skal du flytte?" },
+    { name: "description", content: "Finn ut hva flyttingen innebærer. Start med adressen du flytter fra og til." },
   ];
 }
 
