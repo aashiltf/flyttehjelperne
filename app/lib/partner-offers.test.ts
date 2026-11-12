@@ -2,6 +2,32 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getPartnerOffers, hasPartnerOffers, type PartnerOfferSource } from './partner-offers.ts';
 
+test('shared-home has a Nordea advice demo about shared finances', async () => {
+  assert.equal(hasPartnerOffers('shared-home'), true);
+  const offers = await getPartnerOffers('shared-home', new AbortController().signal);
+  assert.equal(offers.length, 1);
+  assert.equal(offers[0].provider, 'Nordea');
+  assert.equal(offers[0].product, 'Trenger dere rådgivning fra Nordea?');
+  assert.match(offers[0].description, /felles økonomi/);
+  assert.equal(offers[0].isDemo, true);
+  assert.equal(offers[0].disclaimer, '');
+  assert.equal(offers[0].demoButtonLabel, 'book rådgivning');
+  assert.equal(offers[0].link, undefined);
+});
+
+test('move-in has a generic demo discount on handyman services without a booking link', async () => {
+  assert.equal(hasPartnerOffers('move-in'), true);
+  const offers = await getPartnerOffers('move-in', new AbortController().signal);
+  assert.equal(offers.length, 1);
+  assert.equal(offers[0].provider, 'Eksempelpartner');
+  assert.equal(offers[0].product, '10 % rabatt på håndverkerhjelp');
+  assert.match(offers[0].description, /10 % rabatt/);
+  assert.equal(offers[0].isDemo, true);
+  assert.match(offers[0].disclaimer, /ikke et aktivt tilbud/);
+  assert.equal(offers[0].link, undefined);
+  assert.equal(offers[0].price, undefined);
+});
+
 test('address task offers Huseierne membership and discounts, not address reporting partners', async () => {
   assert.equal(hasPartnerOffers('address'), true);
   const offers = await getPartnerOffers('address', new AbortController().signal);
@@ -32,6 +58,7 @@ test('insurance has Gjensidige branding, a sourced award, price and test checkou
   assert.deepEqual(offers[0].price, { amount: 149, currency: 'NOK', period: 'month' });
   assert.equal(offers[0].isDemo, true);
   assert.match(offers[0].disclaimer, /Sjekk eksisterende forsikring/);
+  assert.ok(offers[0].link);
   assert.equal(new URL(offers[0].link.href).protocol, 'https:');
   assert.equal(offers[0].link.label, 'Kjøp forsikring');
   assert.equal(offers[0].link.href, 'https://www.testgjensidige.no/applications/nettbutikk-privat/nettbutikk-innbo');

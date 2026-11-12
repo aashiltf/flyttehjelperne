@@ -83,7 +83,7 @@ type DraftTask = Omit<MovingTask, 'category' | 'dateAnchor'> & { dateAnchor?: Da
 
 const categoryById: Record<string, Category> = {
   'end-lease': 'formal', school: 'formal', address: 'formal', student: 'formal', 'new-parent': 'formal',
-  'old-home': 'practical', packing: 'practical', handover: 'practical', 'prepare-handover': 'practical', 'move-in': 'practical',
+  'old-home': 'practical', packing: 'practical', 'prepare-handover': 'practical', 'move-in': 'practical',
   insurance: 'insurance', 'life-insurance': 'insurance',
   'shared-home': 'other', utilities: 'other', subscriptions: 'other', settle: 'other', neighborhood: 'other',
 };
@@ -248,12 +248,6 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     why: 'Overtakelse er dagen du får tilgang til boligen. Den kan være en annen dag enn du faktisk flytter inn.',
     checks: ['Tidspunkt og deltakere er avtalt med selger, megler eller utleier', 'Jeg vet hvilke dokumenter og nøkler som skal overleveres', 'Jeg har avklart tilgang til boligen frem til innflytting'],
     doneWhen: 'Du vet når og hvordan overtakelsen skal gjennomføres, og hva du må ha klart.',
-  }, {
-    id: 'handover', title: 'Dokumenter og overta boligen', phase: 'moving', offset: 0, dateAnchor: 'handover',
-    summary: 'Gå gjennom boligen og ta vare på dokumentasjonen.',
-    why: 'Dokumenter boligens tilstand ved overtakelsen, selv om du først skal flytte inn senere. Det gjør det lettere å følge opp feil, mangler og avtaler.',
-    checks: ['Jeg har gått gjennom boligen og dokumentert tilstanden', 'Nøkler, eventuell målerstand og overtakelsesdokumenter er avklart'],
-    doneWhen: 'Overtakelsen er gjennomført og relevant dokumentasjon er tatt vare på.',
   }, {
     id: 'move-in', title: 'Flytt inn og gjør boligen klar til bruk', phase: 'moving', offset: 0,
     summary: 'Ta imot flyttelasset og få det viktigste på plass.',

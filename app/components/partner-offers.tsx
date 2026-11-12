@@ -26,11 +26,12 @@ export function PartnerOffers({ taskId }: { taskId: string }) {
           <h3 className="mt-4 text-lg font-semibold">{offer.product}</h3>
           <p className="mt-3 text-sm leading-6 text-kveld-700">{offer.description}</p>
           {offer.award && <a href={offer.award.href} className="mt-2 inline-block text-xs text-kveld-700 underline underline-offset-4">{offer.award.source}</a>}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+           {(offer.price || offer.link || offer.secondaryLink || offer.demoButtonLabel) && <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
             {offer.price && <p><span className="text-3xl font-semibold tracking-tight">{new Intl.NumberFormat('nb-NO', { style: 'currency', currency: offer.price.currency, maximumFractionDigits: 2 }).format(offer.price.amount)}</span><span className="text-sm text-kveld-700"> / {offer.price.period === 'month' ? 'måned' : 'år'}</span></p>}
-             <a className={offer.link.variant === 'subtle' ? 'inline-flex items-center gap-2 rounded-sm py-2 text-sm font-medium text-kveld-700 underline underline-offset-4 hover:text-syrin-600' : 'button-primary'} href={offer.link.href}>{offer.link.label}<Icon name="arrow" className="h-4 w-4" /></a>
+             {offer.link && <a className={offer.link.variant === 'subtle' ? 'inline-flex items-center gap-2 rounded-sm py-2 text-sm font-medium text-kveld-700 underline underline-offset-4 hover:text-syrin-600' : 'button-primary'} href={offer.link.href}>{offer.link.label}<Icon name="arrow" className="h-4 w-4" /></a>}
              {offer.secondaryLink && <a className="button-secondary" href={offer.secondaryLink.href}>{offer.secondaryLink.label}<Icon name="arrow" className="h-4 w-4" /></a>}
-          </div>
+             {offer.demoButtonLabel && <button type="button" className="button-primary" title="Eksempelknapp – bestilling er ikke koblet til">{offer.demoButtonLabel}<Icon name="arrow" className="h-4 w-4" /></button>}
+           </div>}
           {offer.disclaimer && <p className="mt-3 text-xs leading-5 text-kveld-700">{offer.disclaimer}</p>}
         </li>)}
       </ul>}

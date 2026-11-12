@@ -176,15 +176,13 @@ test('every task has a category, and older saved plans without move-out date sti
 test('handover and moving tasks use separate dates and timeline positions', () => {
   const profile = { ...demoState().profile, handoverDate: '2026-12-01', moveDate: '2026-12-15' };
   const tasks = generatePlan(profile);
-  const handover = tasks.find((task) => task.id === 'handover')!;
+  assert.ok(!tasks.some((task) => task.id === 'handover'));
   const moveIn = tasks.find((task) => task.id === 'move-in')!;
   const prepare = tasks.find((task) => task.id === 'prepare-handover')!;
-  assert.equal(taskAnchorDate(profile, handover), '2026-12-01');
+  assert.equal(taskAnchorDate(profile, prepare), '2026-12-01');
   assert.equal(taskAnchorDate(profile, moveIn), '2026-12-15');
-  assert.equal(taskTimelineDay(profile, handover), -14);
   assert.equal(taskTimelineDay(profile, prepare), -21);
   assert.equal(taskTimelineDay(profile, moveIn), 0);
-  assert.equal(relativeLabel(handover.offset, handover.dateAnchor), 'På overtakelsesdagen');
   assert.equal(relativeLabel(prepare.offset, prepare.dateAnchor), '1 uke før overtakelse');
   assert.equal(relativeLabel(moveIn.offset, moveIn.dateAnchor), 'På innflyttingsdagen');
   for (const id of ['insurance', 'utilities', 'prepare-handover']) {
@@ -194,21 +192,21 @@ test('handover and moving tasks use separate dates and timeline positions', () =
     assert.equal(tasks.find((task) => task.id === id)?.dateAnchor, 'move');
   }
   const sameDay = { ...profile, handoverDate: profile.moveDate };
-  assert.equal(taskTimelineDay(sameDay, handover), 0);
+  assert.equal(taskTimelineDay(sameDay, prepare), -7);
   assert.equal(taskTimelineDay(sameDay, moveIn), 0);
 });
 
 test('unknown milestone dates never borrow the other milestone date', () => {
   const profile = demoState().profile;
   const tasks = generatePlan(profile);
-  const handover = tasks.find((task) => task.id === 'handover')!;
+  const handover = tasks.find((task) => task.id === 'prepare-handover')!;
   const moveIn = tasks.find((task) => task.id === 'move-in')!;
   assert.equal(taskAnchorDate({ ...profile, handoverDate: '' }, handover), '');
   assert.equal(taskAnchorDate({ ...profile, moveDate: '' }, moveIn), '');
   assert.equal(taskAnchorDate({ ...profile, dateUnknown: true }, moveIn), '');
   assert.equal(taskAnchorDate({ ...profile, dateUnknown: true }, handover), profile.handoverDate);
-  assert.equal(taskTimelineDay({ ...profile, moveDate: '' }, handover), 0);
-  assert.equal(taskTimelineDay({ ...profile, handoverDate: '' }, handover), 0);
+  assert.equal(taskTimelineDay({ ...profile, moveDate: '' }, handover), -7);
+  assert.equal(taskTimelineDay({ ...profile, handoverDate: '' }, handover), -7);
   assert.deepEqual(profileErrors({ ...profile, moveDate: '', handoverDate: '' }, 2), []);
 });
 
