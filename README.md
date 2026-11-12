@@ -1,7 +1,7 @@
 # Flyttehjelpen
 
 En mobiltilpasset demo som lager en personlig flyttetidslinje fra boligtype,
-husstand, flyttedato og valgfrie behov. Bygget med React 19, React Router 8,
+husstand, datoer for overtakelse og innflytting og valgfrie behov. Bygget med React 19, React Router 8,
 TypeScript og Tailwind CSS 4.
 
 ## Kjør lokalt
@@ -12,17 +12,23 @@ npm run dev
 ```
 
 Åpne http://localhost:5173. Velg «Prøv en eksempelreise» for en ferdig utfylt
-samboerflytting fra leid til eid bolig, med innflytting 35 dager frem i tid.
+samboerflytting fra leid til eid bolig, med innflytting 35 dager frem i tid
+og overtakelse én uke før innflytting.
 
 ## Demoens funksjoner
 
-- Forside med to utvidbare felt: «Hvor og når» (fra/til, leie/eie, ut- og
-  innflyttingsdato) og «Hvem flytter du med». Feltene åpnes ved klikk inni og
+- Forside med to utvidbare felt: «Hvor og når» (fra/til, leie/eie, utflytting,
+  overtakelse av ny bolig og innflytting) og «Hvem flytter du med». Alle datoene
+  er valgfrie; overtakelse og innflytting kan være samme eller ulike dager. Feltene åpnes ved klikk inni og
   lukkes ved klikk utenfor, og viser et sammendrag når de er lukket.
 - Planen på `/tidslinje` kan vises som tidslinje eller som oppgaveliste
   (`?visning=oppgaver`).
-- Tidslinjen viser oppgavene i forhold til innflyttingsdato, med markering av
-  i dag, utflytting og innflytting. Valgt oppgave vises i et kort under, med et
+- Oppgaver for forsikring, strøm, forberedelse og dokumentasjon knyttes til
+  overtakelsen. Pakking, transport og en egen innflyttingsoppgave følger innflytting.
+- Tidslinjen viser markører for i dag, utflytting, overtakelse og innflytting.
+  Med begge datoer kjent plasseres oppgavene på en felles tidsakse. Ellers er
+  plasseringen skjematisk og merket som dette; hver oppgave viser hvilken milepæl
+  tidspunktet gjelder. Valgt oppgave vises i et kort under, med et
   lite Gjensidige-påheng (demo).
 - Oppgavelisten er gruppert i Formelle, Praktiske og Annet, og kan krysses av.
 - Farger fra palett v2 («lett og trygg», se `../palett/v2.html`).
@@ -36,6 +42,8 @@ Data valideres ved innlesing. Lagring skjer først etter innlesing, ved endringe
 Oppgaver som blir irrelevante etter endret kartlegging skjules, men beholder
 status hvis de senere kommer tilbake. Endringer i dato flytter anbefalte
 tidspunkter uten å nullstille svar. «Start på nytt» sletter den lokale planen.
+Eldre planer uten overtakelsesdato leses inn med denne datoen tom; eksisterende
+innflyttingsdato og oppgavestatus beholdes.
 
 Planen deles ikke mellom nettlesere eller enheter. Det finnes ingen innlogging,
 backend, søknadsinnsending eller kjøpsintegrasjon. Kartverkets adressesøk mottar
@@ -60,6 +68,8 @@ Manuell gjennomgang: kartlegg alene/samboer, velg leid/eid, lag planen,
 åpne forsikringssteget, endre svar og avkryssinger, oppdater siden, fullfør og
 angre oppgaver, prøv filtrene og endre kartlegging. Kontroller mobilbredde,
 tastaturnavigasjon, ukjent dato, manuell adresse og tilbakestilling.
+Prøv også overtakelse før innflytting, begge på samme dag, bare én kjent dato
+og ingen datoer. Sjekk at datoendringer flytter oppgavene uten å miste avkryssinger.
 
 ## Publisering
 

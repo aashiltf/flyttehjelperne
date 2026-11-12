@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { demoState, emptyState, generatePlan, parseStoredState, profileErrors, suggestedDate, summarize, validDate } from './moving-plan.ts';
+import { demoState, emptyState, generatePlan, parseStoredState, profileErrors, relativeLabel, suggestedDate, summarize, taskAnchorDate, taskTimelineDay, validDate } from './moving-plan.ts';
 
 test('personalizes housing, household and life phase without duplicate tasks', () => {
   const state = demoState();
@@ -72,4 +72,67 @@ test('every task has a category, and older saved plans without move-out date sti
   const old = demoState();
   const { moveOutDate: _, ...profile } = old.profile;
   assert.equal(parseStoredState(JSON.stringify({ ...old, profile })).profile.moveOutDate, '');
+});
+
+test('handover and moving tasks use separate dates and timeline positions', () => {
+  const profile = { ...demoState().profile, handoverDate: '2026-12-01', moveDate: '2026-12-15' };
+  const tasks = generatePlan(profile);
+  const handover = tasks.find((task) => task.id === 'handover')!;
+  const moveIn = tasks.find((task) => task.id === 'move-in')!;
+  const prepare = tasks.find((task) => task.id === 'prepare-handover')!;
+  assert.equal(taskAnchorDate(profile, handover), '2026-12-01');
+  assert.equal(taskAnchorDate(profile, moveIn), '2026-12-15');
+  assert.equal(taskTimelineDay(profile, handover), -14);
+  assert.equal(taskTimelineDay(profile, prepare), -21);
+  assert.equal(taskTimelineDay(profile, moveIn), 0);
+  assert.equal(relativeLabel(handover.offset, handover.dateAnchor), 'På overtakelsesdagen');
+  assert.equal(relativeLabel(prepare.offset, prepare.dateAnchor), '1 uke før overtakelse');
+  assert.equal(relativeLabel(moveIn.offset, moveIn.dateAnchor), 'På innflyttingsdagen');
+  for (const id of ['insurance', 'utilities', 'prepare-handover']) {
+    assert.equal(tasks.find((task) => task.id === id)?.dateAnchor, 'handover');
+  }
+  for (const id of ['packing', 'address', 'settle']) {
+    assert.equal(tasks.find((task) => task.id === id)?.dateAnchor, 'move');
+  }
+  const sameDay = { ...profile, handoverDate: profile.moveDate };
+  assert.equal(taskTimelineDay(sameDay, handover), 0);
+  assert.equal(taskTimelineDay(sameDay, moveIn), 0);
+});
+
+test('unknown milestone dates never borrow the other milestone date', () => {
+  const profile = demoState().profile;
+  const tasks = generatePlan(profile);
+  const handover = tasks.find((task) => task.id === 'handover')!;
+  const moveIn = tasks.find((task) => task.id === 'move-in')!;
+  assert.equal(taskAnchorDate({ ...profile, handoverDate: '' }, handover), '');
+  assert.equal(taskAnchorDate({ ...profile, moveDate: '' }, moveIn), '');
+  assert.equal(taskAnchorDate({ ...profile, dateUnknown: true }, moveIn), '');
+  assert.equal(taskAnchorDate({ ...profile, dateUnknown: true }, handover), profile.handoverDate);
+  assert.equal(taskTimelineDay({ ...profile, moveDate: '' }, handover), 0);
+  assert.equal(taskTimelineDay({ ...profile, handoverDate: '' }, handover), 0);
+  assert.deepEqual(profileErrors({ ...profile, moveDate: '', handoverDate: '' }, 2), []);
+});
+
+test('older plans load without inventing a handover date or losing progress', () => {
+  const state = demoState();
+  state.progress.handover = { status: 'done', checks: { '0': true }, answer: '' };
+  const { handoverDate: _, ...profile } = state.profile;
+  const restored = parseStoredState(JSON.stringify({ ...state, profile }));
+  assert.equal(restored.profile.handoverDate, '');
+  assert.equal(restored.profile.moveDate, state.profile.moveDate);
+  assert.deepEqual(restored.progress, state.progress);
+  const changed = { ...restored, profile: { ...restored.profile, handoverDate: '2026-12-01' } };
+  assert.deepEqual(parseStoredState(JSON.stringify(changed)), changed);
+});
+
+test('invalid handover dates are rejected in the form and stored data', () => {
+  const state = demoState();
+  for (const handoverDate of ['2026-02-30', 'not-a-date']) {
+    const profile = { ...state.profile, handoverDate };
+    assert.ok(profileErrors(profile, 2).includes('Overtakelsesdatoen er ikke gyldig.'));
+    assert.throws(() => parseStoredState(JSON.stringify({ ...state, profile })));
+  }
+  for (const handoverDate of [null, 123, true, {}]) {
+    assert.throws(() => parseStoredState(JSON.stringify({ ...state, profile: { ...state.profile, handoverDate } })));
+  }
 });

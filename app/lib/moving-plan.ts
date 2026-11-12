@@ -3,6 +3,7 @@ export type Tenure = '' | 'rent' | 'own';
 export type TaskStatus = 'todo' | 'waiting' | 'done' | 'irrelevant';
 export type Phase = 'now' | 'before' | 'moving' | 'after';
 export type Category = 'formal' | 'practical' | 'other';
+export type DateAnchor = 'move' | 'handover';
 
 export const categories: { id: Category; title: string; description: string }[] = [
   { id: 'formal', title: 'Formelle', description: 'Melding, søknader og avtaler med offentlige og utleier' },
@@ -17,6 +18,7 @@ export type MovingProfile = {
   fromTenure: Tenure;
   toTenure: Tenure;
   moveDate: string;
+  handoverDate: string;
   moveOutDate: string;
   dateUnknown: boolean;
   student: boolean;
@@ -47,6 +49,7 @@ export type MovingTask = {
   why: string;
   phase: Phase;
   offset: number;
+  dateAnchor: DateAnchor;
   checks: string[];
   doneWhen: string;
   question?: { text: string; options: string[] };
@@ -55,11 +58,11 @@ export type MovingTask = {
   product: { name: string; text: string };
 };
 
-type DraftTask = Omit<MovingTask, 'category' | 'product'>;
+type DraftTask = Omit<MovingTask, 'category' | 'product' | 'dateAnchor'> & { dateAnchor?: DateAnchor };
 
 const categoryById: Record<string, Category> = {
   'end-lease': 'formal', school: 'formal', address: 'formal', student: 'formal', 'new-parent': 'formal',
-  'old-home': 'practical', packing: 'practical', handover: 'practical',
+  'old-home': 'practical', packing: 'practical', handover: 'practical', 'prepare-handover': 'practical', 'move-in': 'practical',
   'shared-home': 'other', insurance: 'other', utilities: 'other', subscriptions: 'other', settle: 'other', neighborhood: 'other',
 };
 
@@ -80,7 +83,7 @@ function productFor(id: string, p: MovingProfile): MovingTask['product'] {
 export const phases: { id: Phase; title: string; description: string }[] = [
   { id: 'now', title: 'Kom i gang', description: 'De første avklaringene' },
   { id: 'before', title: 'Før flytting', description: 'Få det praktiske på plass' },
-  { id: 'moving', title: 'På flyttedagen', description: 'En god overlevering' },
+  { id: 'moving', title: 'Overtakelse og innflytting', description: 'To milepæler, på samme eller ulike dager' },
   { id: 'after', title: 'Velkommen hjem', description: 'Land i ditt nye nabolag' },
 ];
 
@@ -91,7 +94,7 @@ export function emptyState(): MovingState {
     created: false,
     profile: {
       household: '', fromAddress: '', toAddress: '', fromTenure: '', toTenure: '',
-      moveDate: '', moveOutDate: '', dateUnknown: false, student: false, children: false,
+      moveDate: '', handoverDate: '', moveOutDate: '', dateUnknown: false, student: false, children: false,
       schoolChange: false, newParent: false, retired: false,
     },
     progress: {},
@@ -121,6 +124,7 @@ export function profileErrors(profile: MovingProfile, step: number): string[] {
   }
   return [
     profile.moveDate && !validDate(profile.moveDate) && 'Innflyttingsdatoen er ikke gyldig.',
+    profile.handoverDate && !validDate(profile.handoverDate) && 'Overtakelsesdatoen er ikke gyldig.',
     profile.moveOutDate && !validDate(profile.moveOutDate) && 'Utflyttingsdatoen er ikke gyldig.',
   ].filter((message): message is string => Boolean(message));
 }
@@ -160,21 +164,21 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     doneWhen: 'Du har avklart videre prosess og fulgt opp eventuell søknad hos kommunen.',
   });
   tasks.push({
-    id: 'insurance', title: 'Sjekk forsikringene før du flytter', phase: 'before', offset: -21,
+    id: 'insurance', title: 'Sjekk forsikringene før overtakelsen', phase: 'before', offset: -21, dateAnchor: 'handover',
     summary: p.household === 'partner' ? 'Unngå dobbeltforsikring når dere flytter sammen.' : 'Sjekk eksisterende dekning før du kjøper noe nytt.',
     why: p.household === 'partner' ? 'Dere skal bo sammen. Avklar med forsikringsselskapet om en eksisterende innboforsikring kan dekke dere begge på ny adresse.' : 'Ny adresse og bolig kan påvirke forsikringen din. Start med å undersøke avtalen du allerede har.',
-    checks: ['Jeg har sjekket eksisterende innboforsikring og hvem som er dekket', ...(p.toTenure === 'own' ? ['Jeg har avklart om bygningsforsikring er felles eller må ordnes separat'] : []), 'Jeg har avklart dekning, adresse og flyttedato med forsikringsselskapet'],
-    doneWhen: 'Du vet hvilke forsikringer som gjelder, hvem de dekker og fra hvilken dato.',
+    checks: ['Jeg har sjekket eksisterende innboforsikring og hvem som er dekket', ...(p.toTenure === 'own' ? ['Jeg har avklart om bygningsforsikring er felles eller må ordnes separat'] : []), 'Jeg har avklart dekning, adresse og flyttedato med forsikringsselskapet', 'Jeg har avklart hvilken dekning jeg trenger fra overtakelsen og frem til innflytting'],
+    doneWhen: 'Du vet hvilke forsikringer som gjelder, hvem de dekker og fra hvilken dato. Dekning fra overtakelse og under flyttingen er avklart.',
     question: { text: 'Har du eller en du flytter med innboforsikring i dag?', options: ['Ja', 'Nei', 'Vet ikke ennå'] },
     partner: true,
   });
   tasks.push({
-    id: 'utilities', title: 'Finn ut hva som følger med boligen', phase: 'before', offset: -14,
+    id: 'utilities', title: 'Finn ut hva som følger med boligen', phase: 'before', offset: -14, dateAnchor: 'handover',
     summary: 'Avklar strøm og internett før du bestiller nye avtaler.',
     why: p.toTenure === 'rent' ? 'Du skal leie. Noen tjenester kan være inkludert i husleien, så sjekk leieavtalen først.' : 'Du skal eie. Internett eller andre tjenester kan inngå i felleskostnadene.',
-    checks: ['Jeg vet hva som er inkludert i den nye boligen', 'Jeg har ordnet det jeg trenger og avklart egne gamle avtaler'],
+    checks: ['Jeg vet hva som er inkludert i den nye boligen', 'Jeg har ordnet det jeg trenger og avklart egne gamle avtaler', 'Ansvar for strøm fra overtakelsen og oppstart av internett er avklart'],
     question: { text: 'Følger internett med boligen?', options: ['Ja', 'Nei', 'Vet ikke ennå'] },
-    doneWhen: 'Nødvendige tjenester er avklart, og du vet hvilke egne avtaler som må avsluttes eller flyttes.',
+    doneWhen: 'Nødvendige tjenester er avklart, inkludert hvem som har ansvar for strøm fra overtakelsen og når internett skal være klart.',
   }, {
     id: 'address', title: 'Planlegg adresseendringen', phase: 'before', offset: -7,
     summary: 'Få oversikt over hvem som trenger den nye adressen.',
@@ -194,11 +198,23 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     checks: ['Transport og eventuell flyttehjelp er avtalt', 'Jeg har en plan for pakking, vask og nøkkeloverlevering'],
     doneWhen: 'Transport, pakking og de praktiske avtalene er på plass.',
   }, {
-    id: 'handover', title: 'Dokumenter og overta boligen', phase: 'moving', offset: 0,
+    id: 'prepare-handover', title: 'Avtal overtakelsen av den nye boligen', phase: 'before', offset: -7, dateAnchor: 'handover',
+    summary: 'Avtal tidspunkt, nøkkeloverlevering og hvem som skal være med.',
+    why: 'Overtakelse er dagen du får tilgang til boligen. Den kan være en annen dag enn du faktisk flytter inn.',
+    checks: ['Tidspunkt og deltakere er avtalt med selger, megler eller utleier', 'Jeg vet hvilke dokumenter og nøkler som skal overleveres', 'Jeg har avklart tilgang til boligen frem til innflytting'],
+    doneWhen: 'Du vet når og hvordan overtakelsen skal gjennomføres, og hva du må ha klart.',
+  }, {
+    id: 'handover', title: 'Dokumenter og overta boligen', phase: 'moving', offset: 0, dateAnchor: 'handover',
     summary: 'Gå gjennom boligen og ta vare på dokumentasjonen.',
-    why: 'Dokumentasjon ved inn- og utflytting gjør det lettere å følge opp feil, mangler og avtaler i etterkant.',
+    why: 'Dokumenter boligens tilstand ved overtakelsen, selv om du først skal flytte inn senere. Det gjør det lettere å følge opp feil, mangler og avtaler.',
     checks: ['Jeg har gått gjennom boligen og dokumentert tilstanden', 'Nøkler, eventuell målerstand og overtakelsesdokumenter er avklart'],
     doneWhen: 'Overtakelsen er gjennomført og relevant dokumentasjon er tatt vare på.',
+  }, {
+    id: 'move-in', title: 'Flytt inn og gjør boligen klar til bruk', phase: 'moving', offset: 0,
+    summary: 'Ta imot flyttelasset og få det viktigste på plass.',
+    why: 'Innflytting er dagen du begynner å bo i den nye boligen. Nøkler og overtakelsesdokumenter kan allerede være ordnet.',
+    checks: ['Jeg har tilgang til boligen og har avklart parkering og adkomst for transporten', 'Flyttelasset er tatt imot og eventuelle transportskader er dokumentert', 'Soveplass, nødvendige ting og røykvarslere er på plass og sjekket'],
+    doneWhen: 'Du har flyttet inn og det viktigste er klart for den første natten.',
   }, {
     id: 'settle', title: 'Sjekk at alt har kommet på plass', phase: 'after', offset: 7,
     summary: 'Ta en siste runde på avtaler og eventuelle mangler.',
@@ -228,7 +244,7 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     doneWhen: 'Du har funnet ut om det er noen lokale tilbud du vil utforske videre.',
   });
   return phases.flatMap((phase) => tasks.filter((task) => task.phase === phase.id))
-    .map((task) => ({ ...task, category: categoryById[task.id] ?? 'other', product: productFor(task.id, p) }));
+    .map((task) => ({ ...task, dateAnchor: task.dateAnchor ?? 'move', category: categoryById[task.id] ?? 'other', product: productFor(task.id, p) }));
 }
 
 export function getProgress(state: MovingState, id: string): TaskProgress {
@@ -249,11 +265,26 @@ export function suggestedDate(moveDate: string, offset: number): string {
   return new Intl.DateTimeFormat('nb-NO', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date);
 }
 
-export function relativeLabel(offset: number): string {
-  if (offset === 0) return 'På innflyttingsdagen';
+export function relativeLabel(offset: number, anchor: DateAnchor = 'move'): string {
+  const event = anchor === 'handover' ? 'overtakelse' : 'innflytting';
+  if (offset === 0) return anchor === 'handover' ? 'På overtakelsesdagen' : 'På innflyttingsdagen';
   const days = Math.abs(offset);
   const amount = days >= 14 && days % 7 === 0 ? `${days / 7} uker` : days === 7 ? '1 uke' : `${days} dager`;
-  return `${amount} ${offset < 0 ? 'før' : 'etter'} innflytting`;
+  return `${amount} ${offset < 0 ? 'før' : 'etter'} ${event}`;
+}
+
+/** Ukjente datoer beholdes relative til sin egen milepæl, aldri den andre datoen. */
+export function taskAnchorDate(profile: MovingProfile, task: MovingTask): string {
+  return task.dateAnchor === 'handover'
+    ? (validDate(profile.handoverDate) ? profile.handoverDate : '')
+    : (hasMoveDate(profile) ? profile.moveDate : '');
+}
+
+/** Felles tidsakse når begge datoer er kjent, ellers en skjematisk plassering. */
+export function taskTimelineDay(profile: MovingProfile, task: MovingTask): number {
+  const shift = task.dateAnchor === 'handover' && hasMoveDate(profile) && validDate(profile.handoverDate)
+    ? daysBetween(profile.moveDate, profile.handoverDate) : 0;
+  return shift + task.offset;
 }
 
 export function addDays(value: string, offset: number): Date | null {
@@ -283,7 +314,9 @@ export function demoState(now = new Date()): MovingState {
   const moveDate = toIsoDate(date);
   const out = new Date(date);
   out.setDate(out.getDate() + 3);
-  return { ...state, created: true, profile: { ...state.profile, household: 'partner', fromAddress: 'Markveien 12, Oslo', toAddress: 'Bøkkerveien 8, Oslo', fromTenure: 'rent', toTenure: 'own', moveDate, moveOutDate: toIsoDate(out) } };
+  const handover = new Date(date);
+  handover.setDate(handover.getDate() - 7);
+  return { ...state, created: true, profile: { ...state.profile, household: 'partner', fromAddress: 'Markveien 12, Oslo', toAddress: 'Bøkkerveien 8, Oslo', fromTenure: 'rent', toTenure: 'own', moveDate, handoverDate: toIsoDate(handover), moveOutDate: toIsoDate(out) } };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -296,6 +329,7 @@ export function parseStoredState(raw: string): MovingState {
   const p = value.profile;
   if (!['', 'alone', 'partner'].includes(String(p.household)) || !['', 'rent', 'own'].includes(String(p.fromTenure)) || !['', 'rent', 'own'].includes(String(p.toTenure))) throw new Error('Ugyldige boligvalg');
   for (const key of ['fromAddress', 'toAddress', 'moveDate']) if (typeof p[key] !== 'string' || p[key].length > 500) throw new Error('Ugyldig tekst');
+  if (p.handoverDate !== undefined && (typeof p.handoverDate !== 'string' || p.handoverDate.length > 20)) throw new Error('Ugyldig overtakelsesdato');
   for (const key of ['dateUnknown', 'student', 'children', 'schoolChange', 'newParent', 'retired']) if (typeof p[key] !== 'boolean') throw new Error('Ugyldig valg');
   if (!Number.isInteger(value.step) || Number(value.step) < 0 || Number(value.step) > 2 || typeof value.created !== 'boolean') throw new Error('Ugyldig steg');
   // Only copy known fields; do not merge arbitrary stored objects into application state.
@@ -303,10 +337,12 @@ export function parseStoredState(raw: string): MovingState {
     household: p.household as Household, fromTenure: p.fromTenure as Tenure, toTenure: p.toTenure as Tenure,
     fromAddress: p.fromAddress as string, toAddress: p.toAddress as string, moveDate: p.moveDate as string,
     moveOutDate: typeof p.moveOutDate === 'string' && p.moveOutDate.length <= 20 ? p.moveOutDate : '',
+    handoverDate: typeof p.handoverDate === 'string' ? p.handoverDate : '',
     dateUnknown: p.dateUnknown as boolean, student: p.student as boolean, children: p.children as boolean,
     schoolChange: p.schoolChange as boolean, newParent: p.newParent as boolean, retired: p.retired as boolean,
   };
   if (profile.moveOutDate && !validDate(profile.moveOutDate)) throw new Error('Ugyldig utflyttingsdato');
+  if (profile.handoverDate && !validDate(profile.handoverDate)) throw new Error('Ugyldig overtakelsesdato');
   if (profile.moveDate && !validDate(profile.moveDate)) throw new Error('Ugyldig dato');
   if (value.created && !isProfileComplete(profile)) throw new Error('Ufullstendig plan');
   const progress: Record<string, TaskProgress> = {};

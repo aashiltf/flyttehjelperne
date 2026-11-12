@@ -9,7 +9,7 @@ import { Icon, Shell } from '~/components/ui';
 import { demoState, formatDate, profileErrors, validDate, type MovingProfile, type Tenure } from '~/lib/moving-plan';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Flyttehjelpen – din personlige flytteplan' }, { name: 'description', content: 'Litt mindre kaos, litt mer hjemme. Fortell oss hvor, når og med hvem du flytter, så lager vi en personlig flytteplan.' }];
+  return [{ title: 'Flyttehjelpen – din personlige flytteplan' }, { name: 'description', content: 'Planlegg overtakelse og innflytting med en personlig flytteplan. Fortell oss hvor, når og med hvem du flytter.' }];
 }
 
 type FieldId = 'where' | 'who';
@@ -41,7 +41,7 @@ function whereSummary(p: MovingProfile) {
     const kind = homeKindLabel(address);
     return [shortAddress(address), kind && kind.toLowerCase(), validDate(date) && `${prefix} ${formatDate(date)}`].filter(Boolean).join(', ');
   };
-  return <span className="block font-medium text-kveld-900">{side(p.fromAddress, p.moveOutDate, 'ut')} → {side(p.toAddress, p.moveDate, 'inn')}</span>;
+  return <span className="block font-medium text-kveld-900">{side(p.fromAddress, p.moveOutDate, 'ut')} → {side(p.toAddress, p.moveDate, 'inn')}{validDate(p.handoverDate) && ` · overtakelse ${formatDate(p.handoverDate)}`}</span>;
 }
 
 function whoSummary(p: MovingProfile) {
@@ -124,9 +124,11 @@ export default function Home() {
             <AddressField label="Jeg flytter til" value={profile.toAddress} onChange={(toAddress) => patch({ toAddress })} />
             <HomeTypePreview address={profile.toAddress} />
             <TenureChoice label="Den nye boligen" name="toTenure" value={profile.toTenure} onChange={(toTenure) => patch({ toTenure })} />
+            <p className="text-xs leading-5 text-kveld-500">Overtakelse er når du får nøklene og overtar boligen. Innflytting er når du faktisk flytter inn. Det kan være samme dag eller to ulike datoer.</p>
+            <DateField id="handover-date" label="Overtakelse" value={profile.handoverDate} onChange={(handoverDate) => patch({ handoverDate })} />
             <DateField id="move-date" label="Innflytting" value={profile.moveDate} onChange={(moveDate) => patch({ moveDate, dateUnknown: false })} />
           </div>
-          <p className="text-xs leading-5 text-kveld-500">Vet du ikke datoene ennå? Det går fint. Da viser vi planen i uker før og etter flyttedagen, og du kan legge inn datoene senere.</p>
+          <p className="text-xs leading-5 text-kveld-500">Vet du ikke datoene ennå? Det går fint. Oppgavene vises relativt til overtakelse eller innflytting, og du kan legge inn datoene senere.</p>
           {showErrors && where.length > 0 && <p className="text-sm text-feil-500">{where[0]}</p>}
           <div className="flex justify-end"><button type="button" className="button-secondary" onClick={() => setOpenField(where.length ? 'where' : 'who')}>Neste: hvem flytter<Icon name="arrow" className="h-4 w-4" /></button></div>
         </div>

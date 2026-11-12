@@ -7,7 +7,7 @@ import { HouseIllustration, Icon, Shell } from '~/components/ui';
 import { demoState, formatDate, hasMoveDate, validDate, generatePlan, getProgress, summarize } from '~/lib/moving-plan';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Din flytteplan – Flyttehjelpen' }, { name: 'description', content: 'Se flytteplanen som tidslinje eller som en liste med oppgaver du kan krysse av.' }];
+  return [{ title: 'Din flytteplan – Flyttehjelpen' }, { name: 'description', content: 'Se oppgaver for overtakelse og innflytting som tidslinje eller som en liste du kan krysse av.' }];
 }
 
 type View = 'tidslinje' | 'oppgaver';
@@ -51,7 +51,7 @@ export default function Plan() {
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-kveld-50 px-5 py-4 text-sm">
         <div className="flex min-w-0 items-center gap-2.5"><Icon name="pin" className="text-syrin-600" /><div className="min-w-0"><p className="text-xs text-kveld-500">Fra{validDate(p.moveOutDate) ? ` · ut ${formatDate(p.moveOutDate)}` : ''}</p><p className="break-words font-medium">{p.fromAddress}</p></div></div>
         <Icon name="arrow" className="hidden text-kveld-300 sm:block" />
-        <div className="flex min-w-0 items-center gap-2.5"><Icon name="home" className="text-syrin-600" /><div className="min-w-0"><p className="text-xs text-kveld-500">Til{hasMoveDate(p) ? ` · inn ${formatDate(p.moveDate, true)}` : ''}</p><p className="break-words font-medium">{p.toAddress}</p></div></div>
+        <div className="flex min-w-0 items-center gap-2.5"><Icon name="home" className="text-syrin-600" /><div className="min-w-0"><p className="text-xs text-kveld-500">Til</p><p className="break-words font-medium">{p.toAddress}</p><p className="mt-1 text-xs text-kveld-500">Overtakelse: {validDate(p.handoverDate) ? formatDate(p.handoverDate, true) : 'Ikke avklart'}</p><p className="mt-1 text-xs text-kveld-500">Innflytting: {hasMoveDate(p) ? formatDate(p.moveDate, true) : 'Ikke avklart'}</p></div></div>
       </div>
       <div className="flex items-center gap-4 rounded-2xl bg-sol px-5 py-4">
         <p className="text-3xl font-semibold tracking-tight">{stats.done}<span className="text-base font-normal text-kveld-500"> / {stats.total}</span></p>
