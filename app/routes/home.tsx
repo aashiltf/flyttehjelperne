@@ -1,30 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import type { Route } from './+types/home';
-import { AddressField } from '~/components/address-field';
 import { ExpandableField } from '~/components/expandable-field';
-import { HomeTypePreview, homeKindLabel } from '~/components/home-type';
+import { homeKindLabel } from '~/components/home-type';
+import { HouseholdFields, HousingFields } from '~/components/profile-fields';
 import { useMoving } from '~/components/moving-provider';
 import { Icon, Shell } from '~/components/ui';
-import { demoState, formatDate, profileErrors, validDate, type MovingProfile, type Tenure } from '~/lib/moving-plan';
+import { formatDate, profileErrors, validDate, type HomeKind, type MovingProfile } from '~/lib/moving-plan';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Flyttehjelpen – din personlige flytteplan' }, { name: 'description', content: 'Planlegg overtakelse og innflytting med en personlig flytteplan. Fortell oss hvor, når og med hvem du flytter.' }];
+  return [{ title: 'Planlegg flyttingen – Flyttehjelpen' }, { name: 'description', content: 'Legg inn adresser og datoer. Få en oversikt over oppgaver og frister for flyttingen.' }];
 }
 
 type FieldId = 'where' | 'who';
-
-function TenureChoice({ value, onChange, label, name }: { value: Tenure; onChange: (value: Tenure) => void; label: string; name: string }) {
-  return <fieldset><legend className="mb-2 text-xs font-semibold text-kveld-500">{label}</legend><div className="grid grid-cols-2 gap-2">
-    {([['rent', 'Leier'], ['own', 'Eier']] as const).map(([id, title]) => <label key={id} className={`choice-small !py-2.5 ${value === id ? 'choice-selected' : ''}`}><input className="check-input" type="radio" name={name} value={id} checked={value === id} onChange={() => onChange(id)} />{title}</label>)}
-  </div></fieldset>;
-}
-
-function DateField({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (value: string) => void }) {
-  return <div><label className="mb-2 block text-xs font-semibold text-kveld-500" htmlFor={id}>{label} <span className="font-normal">· valgfritt</span></label>
-    <div className="flex gap-2"><input id={id} type="date" className="text-input" value={value} onChange={(event) => onChange(event.target.value)} />{value && <button type="button" className="shrink-0 rounded-xl px-3 text-xs font-semibold text-syrin-600 underline underline-offset-4" onClick={() => onChange('')}>Fjern<span className="sr-only"> {label.toLowerCase()}sdato</span></button>}</div>
-  </div>;
-}
 
 function shortAddress(value: string) {
   return value.split(',')[0]?.trim() ?? value;
@@ -36,21 +24,18 @@ function whereErrors(profile: MovingProfile) {
 
 function whereSummary(p: MovingProfile) {
   if (!p.fromAddress && !p.toAddress && !p.moveDate) return 'Legg inn adressene, og datoene hvis du vet dem';
-  const side = (address: string, date: string, prefix: string) => {
+  const side = (address: string, kind: HomeKind, date: string, prefix: string) => {
     if (!address) return '…';
-    const kind = homeKindLabel(address);
-    return [shortAddress(address), kind && kind.toLowerCase(), validDate(date) && `${prefix} ${formatDate(date)}`].filter(Boolean).join(', ');
+    const type = homeKindLabel(address, kind);
+    return [shortAddress(address), type && type.toLowerCase(), validDate(date) && `${prefix} ${formatDate(date)}`].filter(Boolean).join(', ');
   };
-  return <span className="block font-medium text-kveld-900">{side(p.fromAddress, p.moveOutDate, 'ut')} → {side(p.toAddress, p.moveDate, 'inn')}{validDate(p.handoverDate) && ` · overtakelse ${formatDate(p.handoverDate)}`}</span>;
+  return <span className="block font-medium text-kveld-900">{side(p.fromAddress, p.fromHomeKind, p.moveOutDate, 'ut')} → {side(p.toAddress, p.toHomeKind, p.moveDate, 'inn')}{validDate(p.handoverDate) && ` · overtakelse ${formatDate(p.handoverDate)}`}</span>;
 }
 
 function whoSummary(p: MovingProfile) {
-  if (!p.household) return 'Alene, med samboer, med barn?';
-  const parts = [p.household === 'partner' ? 'Med samboer' : 'Alene'];
+  if (!p.household) return 'Velg hvem som flytter';
+  const parts = [p.household === 'partner' ? 'Med ektefelle/samboer' : 'Alene'];
   if (p.children) parts.push(p.schoolChange ? 'med barn som bytter skole' : 'med barn');
-  if (p.student) parts.push('student');
-  if (p.newParent) parts.push('nybakte foreldre');
-  if (p.retired) parts.push('pensjonist');
   return <span className="font-medium text-kveld-900">{parts.join(' · ')}</span>;
 }
 
@@ -95,66 +80,33 @@ export default function Home() {
     await navigate('/tidslinje');
   }
 
-  return <Shell><main className="relative overflow-x-clip">
-    <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[32rem] bg-gradient-to-b from-himmel via-kveld-50 to-white" />
-    <div aria-hidden="true" className="absolute -right-10 top-8 h-40 w-40 rounded-full bg-sol sm:right-[8%] sm:top-12 sm:h-60 sm:w-60" />
-    <div aria-hidden="true" className="absolute -right-48 top-[24rem] hidden h-[30rem] w-[30rem] rounded-full bg-eng lg:block" />
-    <div aria-hidden="true" className="absolute -left-40 top-[44rem] hidden h-72 w-72 rounded-full bg-syrin-100 lg:block" />
-    <div>
-      <div className="relative mx-auto max-w-2xl px-5 pb-10 pt-12 sm:px-8 sm:pt-20">
-        {state.created && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/90 px-5 py-3 text-sm text-kveld-700 shadow-[0_0_0_1px_var(--color-kveld-100)]"><span>Du har allerede en flytteplan. Endrer du svarene, oppdateres den.</span><Link className="font-semibold text-syrin-600 underline underline-offset-4" to="/tidslinje">Til planen min →</Link></div>}
-        <p className="eyebrow">Flyttehjelpen</p>
-        <h1 className="mt-3 max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl">Flytting kan være kaos. <span className="text-syrin-500">Planen trenger ikke være det.</span></h1>
-        <p className="mt-5 max-w-lg text-lg leading-8 text-kveld-500">Fortell oss hvor, når og med hvem du flytter. Så lager vi en plan med alt du må huske.</p>
-      </div>
-    </div>
-
-    <form onSubmit={submit} noValidate className="relative mx-auto max-w-2xl space-y-4 px-5 pb-10 sm:px-8">
+  return <Shell showFooter={false}><main className="min-h-[calc(100vh-5rem)] bg-himmel/45">
+    <div className="mx-auto grid max-w-6xl items-start gap-8 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-12">
+      <section className="lg:sticky lg:top-12 lg:py-10">
+        <p className="mb-4 inline-block rounded-lg bg-sol px-3 py-1.5 text-sm font-semibold text-kveld-700">Flyttehjelpen</p>
+        <h1 className="max-w-md text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl">Flytting kan være kaos. <span className="mt-3 block text-syrin-600">Planen trenger ikke være det.</span></h1>
+        <p className="mt-5 max-w-sm text-base leading-7 text-kveld-500">Få oversikt over oppgaver og frister for flyttingen.</p>
+      </section>
+      <form onSubmit={submit} noValidate aria-label="Opplysninger om flyttingen" className="min-w-0 space-y-4 rounded-3xl border border-syrin-200 bg-syrin-100 p-3 sm:p-6">
       {showErrors && errors.length > 0 && <div ref={errorSummary} tabIndex={-1} role="alert" className="rounded-2xl bg-feil-100 p-4 text-sm text-feil-500"><p className="font-semibold">Vi mangler litt informasjon</p><ul className="mt-1 list-inside list-disc">{errors.map((error) => <li key={error}>{error}</li>)}</ul></div>}
 
-      <ExpandableField number={1} title="Hvor og når flytter du?" summary={whereSummary(profile)} complete={where.length === 0} open={openField === 'where'} onOpen={() => setOpenField('where')} onClose={close}>
+      <ExpandableField number={1} title="Fra og til" summary={whereSummary(profile)} complete={where.length === 0} open={openField === 'where'} onOpen={() => setOpenField('where')} onClose={close}>
         <div className="space-y-5">
-          <div className="space-y-4 rounded-2xl bg-kveld-50 p-4">
-            <AddressField label="Jeg flytter fra" value={profile.fromAddress} onChange={(fromAddress) => patch({ fromAddress })} />
-            <HomeTypePreview address={profile.fromAddress} />
-            <TenureChoice label="Boligen jeg flytter fra" name="fromTenure" value={profile.fromTenure} onChange={(fromTenure) => patch({ fromTenure })} />
-            <DateField id="move-out-date" label="Utflytting" value={profile.moveOutDate} onChange={(moveOutDate) => patch({ moveOutDate, dateUnknown: false })} />
-          </div>
-          <div className="space-y-4 rounded-2xl bg-syrin-50 p-4">
-            <AddressField label="Jeg flytter til" value={profile.toAddress} onChange={(toAddress) => patch({ toAddress })} />
-            <HomeTypePreview address={profile.toAddress} />
-            <TenureChoice label="Den nye boligen" name="toTenure" value={profile.toTenure} onChange={(toTenure) => patch({ toTenure })} />
-            <p className="text-xs leading-5 text-kveld-500">Overtakelse er når du får nøklene og overtar boligen. Innflytting er når du faktisk flytter inn. Det kan være samme dag eller to ulike datoer.</p>
-            <DateField id="handover-date" label="Overtakelse" value={profile.handoverDate} onChange={(handoverDate) => patch({ handoverDate })} />
-            <DateField id="move-date" label="Innflytting" value={profile.moveDate} onChange={(moveDate) => patch({ moveDate, dateUnknown: false })} />
-          </div>
-          <p className="text-xs leading-5 text-kveld-500">Vet du ikke datoene ennå? Det går fint. Oppgavene vises relativt til overtakelse eller innflytting, og du kan legge inn datoene senere.</p>
+          <HousingFields profile={profile} patch={patch} />
           {showErrors && where.length > 0 && <p className="text-sm text-feil-500">{where[0]}</p>}
           <div className="flex justify-end"><button type="button" className="button-secondary" onClick={() => setOpenField(where.length ? 'where' : 'who')}>Neste: hvem flytter<Icon name="arrow" className="h-4 w-4" /></button></div>
         </div>
       </ExpandableField>
 
-      <ExpandableField number={2} title="Hvem flytter du med?" summary={whoSummary(profile)} complete={who.length === 0} open={openField === 'who'} onOpen={() => setOpenField('who')} onClose={close}>
-        <fieldset><legend className="sr-only">Hvem flytter du med?</legend><div className="grid grid-cols-2 gap-3">
-          {([{ value: 'alone', title: 'Alene', icon: 'person' }, { value: 'partner', title: 'Med samboer', icon: 'users' }] as const).map((option) => <label key={option.value} className={`choice-card flex items-center gap-3 ${profile.household === option.value ? 'choice-selected' : ''}`}>
-            <input type="radio" name="household" value={option.value} checked={profile.household === option.value} onChange={() => patch({ household: option.value })} className="sr-only" />
-            <span className={`rounded-xl p-2.5 ${profile.household === option.value ? 'bg-syrin-500 text-white' : 'bg-syrin-100 text-syrin-600'}`}><Icon name={option.icon} /></span>
-            <span className="font-semibold">{option.title}</span>
-          </label>)}
-        </div></fieldset>
-        <label className={`choice-small mt-3 ${profile.children ? 'choice-selected' : ''}`}><input className="check-input" type="checkbox" checked={profile.children} onChange={(event) => patch({ children: event.target.checked, ...(event.target.checked ? {} : { schoolChange: false }) })} />Vi har med barn</label>
-        {profile.children && <label className="mt-2 ml-7 flex items-center gap-3 text-sm text-kveld-700"><input className="check-input" type="checkbox" checked={profile.schoolChange} onChange={(event) => patch({ schoolChange: event.target.checked })} />Barn skal bytte skole eller barnehage</label>}
-        <fieldset className="mt-5"><legend className="mb-2 text-xs font-semibold text-kveld-500">Passer noe av dette? <span className="font-normal">Valgfritt</span></legend><div className="flex flex-wrap gap-2">
-          {([{ key: 'student', label: 'Student' }, { key: 'newParent', label: 'Nybakte foreldre' }, { key: 'retired', label: 'Pensjonist' }] as const).map((option) => <label key={option.key} className={`inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${profile[option.key] ? 'bg-syrin-500 text-white' : 'bg-white text-kveld-700 shadow-[inset_0_0_0_1px_var(--color-kveld-200)] hover:shadow-[inset_0_0_0_1px_var(--color-syrin-300)]'}`}><input className="sr-only" type="checkbox" checked={profile[option.key]} onChange={(event) => patch({ [option.key]: event.target.checked })} />{profile[option.key] && <Icon name="check" className="h-4 w-4" />}{option.label}</label>)}
-        </div></fieldset>
+      <ExpandableField number={2} title="Hvem flytter?" summary={whoSummary(profile)} complete={who.length === 0} open={openField === 'who'} onOpen={() => setOpenField('who')} onClose={close}>
+        <HouseholdFields profile={profile} patch={patch} />
         {showErrors && who.length > 0 && <p className="mt-4 text-sm text-feil-500">{who[0]}</p>}
       </ExpandableField>
 
-      <div className="pt-4">
-        <button type="submit" disabled={building} className="button-primary w-full !min-h-14 !text-base">{building ? 'Lager planen din …' : state.created ? 'Oppdater flytteplanen' : 'Lag min flytteplan'}<Icon name="arrow" /></button>
-        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium text-kveld-500"><span className="inline-flex items-center gap-1.5"><Icon name="check" className="h-4 w-4 text-ok-500" /> Ingen innlogging</span><span className="inline-flex items-center gap-1.5"><Icon name="check" className="h-4 w-4 text-ok-500" /> Lagres bare hos deg</span><span className="inline-flex items-center gap-1.5"><Icon name="check" className="h-4 w-4 text-ok-500" /> Kan endres når som helst</span></div>
-        {!state.created && <p className="mt-6 text-center text-sm text-kveld-500">Bare nysgjerrig? <button type="button" className="font-semibold text-syrin-600 underline underline-offset-4" onClick={() => { update(() => demoState()); void navigate('/tidslinje'); }}>Prøv en eksempelreise</button></p>}
+      <div className="flex justify-end pt-2">
+        <button type="submit" disabled={building} className="button-primary w-full sm:w-auto">{building ? 'Henter planen …' : 'Se planen min'}<Icon name="arrow" /></button>
       </div>
     </form>
+    </div>
   </main></Shell>;
 }

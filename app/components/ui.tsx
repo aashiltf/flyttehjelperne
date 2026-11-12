@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import type { ReactNode } from 'react';
 import { useMoving } from './moving-provider';
 
-export function Icon({ name, className = '' }: { name: 'home' | 'arrow' | 'check' | 'pin' | 'users' | 'person' | 'calendar' | 'shield' | 'spark' | 'chevron' | 'clock' | 'list' | 'timeline' | 'close'; className?: string }) {
+export function Icon({ name, className = '' }: { name: 'home' | 'arrow' | 'check' | 'pin' | 'users' | 'person' | 'calendar' | 'shield' | 'spark' | 'chevron' | 'clock' | 'list' | 'timeline' | 'close' | 'edit' | 'help' | 'plus'; className?: string }) {
   const paths: Record<typeof name, ReactNode> = {
     home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" /><path d="M9 21v-7h6v7" /></>,
     arrow: <path d="M4 12h16m-6-6 6 6-6 6" />,
@@ -18,11 +18,14 @@ export function Icon({ name, className = '' }: { name: 'home' | 'arrow' | 'check
     list: <><path d="M9 6h11M9 12h11M9 18h11" /><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2" /></>,
     timeline: <><path d="M3 12h18" /><circle cx="7" cy="12" r="2" /><circle cx="14" cy="12" r="2" /><path d="M7 6v4M14 14v4M19 8v8" /></>,
     close: <path d="M6 6l12 12M18 6 6 18" />,
+    plus: <path d="M12 4v16M4 12h16" />,
+    edit: <path d="m15 5 4 4M4 20l5-1L20 8a3 3 0 0 0-4-4L5 15l-1 5Z" />,
+    help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2M12 16h.01" /></>,
   };
   return <svg aria-hidden="true" className={`h-5 w-5 shrink-0 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
 
-export function Shell({ children }: { children: ReactNode }) {
+export function Shell({ children, showFooter = true }: { children: ReactNode; showFooter?: boolean }) {
   const { storageError, ready } = useMoving();
   return <div className="min-h-screen text-kveld-900">
     <header className="border-b border-kveld-100 bg-white">
@@ -31,16 +34,14 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-syrin-500 text-white"><Icon name="home" /></span>
           <span>flytte<span className="text-syrin-600">hjelpen</span></span>
         </Link>
-        <span className="hidden text-sm text-kveld-500 sm:block">Litt mindre kaos. Litt mer hjemme.</span>
-        <span className="rounded-full border border-syrin-200 px-3 py-1 text-xs font-semibold text-syrin-600">Demo</span>
       </div>
     </header>
     {storageError && <div role="alert" className="mx-auto mt-5 max-w-5xl rounded-xl border border-varsel-300 bg-varsel-100 p-4 text-sm text-varsel-500">{storageError}</div>}
     {ready ? children : <main className="mx-auto max-w-3xl px-5 py-24 text-center" role="status">Henter flytteplanen din …</main>}
-    <footer className="mx-auto max-w-6xl px-5 py-8 text-center text-xs leading-6 text-kveld-500 sm:px-8">
+    {showFooter && <footer className="mx-auto max-w-6xl px-5 py-8 text-center text-xs leading-6 text-kveld-500 sm:px-8">
       <span className="inline-flex items-center gap-1.5"><Icon name="shield" className="h-4 w-4" /> Svarene dine lagres lokalt i denne nettleseren.</span>
       <p>En veiledende flytteplan. Ingen søknader, bestillinger eller avtaler sendes fra demoen.</p>
-    </footer>
+    </footer>}
   </div>;
 }
 

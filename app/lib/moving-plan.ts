@@ -1,5 +1,13 @@
 export type Household = '' | 'alone' | 'partner';
-export type Tenure = '' | 'rent' | 'own';
+export type Tenure = '' | 'rent' | 'own' | 'other';
+export const homeKinds = ['leilighet', 'rekkehus', 'enebolig', 'tomannsbolig'] as const;
+export type HomeKind = typeof homeKinds[number];
+export const subscriptionOptions = [
+  { id: 'magazines', label: 'Magasiner', checkKey: '2', check: 'Jeg har endret adresse eller sagt opp magasinabonnementene mine' },
+  { id: 'newspapers', label: 'Aviser', checkKey: '3', check: 'Jeg har endret adresse eller sagt opp avisabonnementene mine' },
+  { id: 'mealBoxes', label: 'Matkasser', checkKey: '4', check: 'Jeg har endret leveringsadresse, satt på pause eller sagt opp matkassene mine' },
+] as const;
+export type Subscription = typeof subscriptionOptions[number]['id'];
 export type TaskStatus = 'todo' | 'waiting' | 'done' | 'irrelevant';
 export type Phase = 'now' | 'before' | 'moving' | 'after';
 export type Category = 'formal' | 'practical' | 'other';
@@ -17,6 +25,8 @@ export type MovingProfile = {
   toAddress: string;
   fromTenure: Tenure;
   toTenure: Tenure;
+  fromHomeKind: HomeKind;
+  toHomeKind: HomeKind;
   moveDate: string;
   handoverDate: string;
   moveOutDate: string;
@@ -26,6 +36,7 @@ export type MovingProfile = {
   schoolChange: boolean;
   newParent: boolean;
   retired: boolean;
+  subscriptions: Subscription[];
 };
 
 export type TaskProgress = {
@@ -51,6 +62,7 @@ export type MovingTask = {
   offset: number;
   dateAnchor: DateAnchor;
   checks: string[];
+  checkKeys?: string[];
   doneWhen?: string;
   resources?: {
     description: string;
@@ -83,8 +95,9 @@ export function emptyState(): MovingState {
     created: false,
     profile: {
       household: '', fromAddress: '', toAddress: '', fromTenure: '', toTenure: '',
+      fromHomeKind: 'leilighet', toHomeKind: 'enebolig',
       moveDate: '', handoverDate: '', moveOutDate: '', dateUnknown: false, student: false, children: false,
-      schoolChange: false, newParent: false, retired: false,
+      schoolChange: false, newParent: false, retired: false, subscriptions: [],
     },
     progress: {},
   };
@@ -102,13 +115,13 @@ export function validDate(value: string): boolean {
 }
 
 export function profileErrors(profile: MovingProfile, step: number): string[] {
-  if (step === 0) return profile.household ? [] : ['Velg om du flytter alene eller med samboer.'];
+  if (step === 0) return profile.household ? [] : ['Velg om du flytter alene eller med ektefelle/samboer.'];
   if (step === 1) {
     return [
       !profile.fromAddress.trim() && 'Skriv inn adressen du flytter fra.',
       !profile.toAddress.trim() && 'Skriv inn adressen du flytter til.',
-      !profile.fromTenure && 'Velg om du leier eller eier boligen du flytter fra.',
-      !profile.toTenure && 'Velg om du skal leie eller eie den nye boligen.',
+      !profile.fromTenure && 'Velg eie, leie eller annet for boligen du flytter fra.',
+      !profile.toTenure && 'Velg eie, leie eller annet for den nye boligen.',
     ].filter((message): message is string => Boolean(message));
   }
   return [
@@ -171,7 +184,7 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
   tasks.push({
     id: 'utilities', title: 'Finn ut hva som følger med boligen', phase: 'before', offset: -14, dateAnchor: 'handover',
     summary: 'Avklar strøm og internett før du bestiller nye avtaler.',
-    why: p.toTenure === 'rent' ? 'Du skal leie. Noen tjenester kan være inkludert i husleien, så sjekk leieavtalen først.' : 'Du skal eie. Internett eller andre tjenester kan inngå i felleskostnadene.',
+    why: p.toTenure === 'rent' ? 'Du skal leie. Noen tjenester kan være inkludert i husleien, så sjekk leieavtalen først.' : p.toTenure === 'own' ? 'Du skal eie. Internett eller andre tjenester kan inngå i felleskostnadene.' : 'Avklar hvilke tjenester som følger med boligen, og hvilke avtaler du selv trenger.',
     checks: ['Jeg vet hva som er inkludert i den nye boligen', 'Jeg har ordnet det jeg trenger og avklart egne gamle avtaler', 'Ansvar for strøm fra overtakelsen og oppstart av internett er avklart'],
     question: { text: 'Følger internett med boligen?', options: ['Ja', 'Nei', 'Vet ikke ennå'] },
     doneWhen: 'Nødvendige tjenester er avklart, inkludert hvem som har ansvar for strøm fra overtakelsen og når internett skal være klart.',
@@ -185,7 +198,8 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     id: 'subscriptions', title: 'Endre eller si opp abonnementer', phase: 'before', offset: -10,
     summary: 'Strøm, internett, aviser, treningssenter og andre faste avtaler.',
     why: 'Mange abonnementer følger adressen din. Noen kan flyttes, andre må sies opp med oppsigelsestid.',
-    checks: ['Jeg har listet opp abonnementene jeg betaler for', 'Jeg har flyttet eller sagt opp det som berøres av flyttingen'],
+    checks: ['Jeg har listet opp abonnementene jeg betaler for', 'Jeg har flyttet eller sagt opp det som berøres av flyttingen', ...subscriptionOptions.filter((option) => p.subscriptions.includes(option.id)).map((option) => option.check)],
+    checkKeys: ['0', '1', ...subscriptionOptions.filter((option) => p.subscriptions.includes(option.id)).map((option) => option.checkKey)],
     doneWhen: 'Abonnementene dine er flyttet, sagt opp eller bekreftet på ny adresse.',
   }, {
     id: 'packing', title: 'Gjør klart til flyttedagen', phase: 'before', offset: -7,
@@ -246,7 +260,7 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
 export function getProgress(state: MovingState, task: MovingTask): TaskProgress {
   const progress = state.progress[task.id] ?? { status: 'todo', checks: {}, answer: '' };
   if (progress.status === 'irrelevant') return progress;
-  const done = task.checks.length > 0 && task.checks.every((_, index) => progress.checks[String(index)] === true);
+  const done = task.checks.length > 0 && task.checks.every((_, index) => progress.checks[task.checkKeys?.[index] ?? String(index)] === true);
   return { ...progress, status: done ? 'done' : progress.status === 'waiting' ? 'waiting' : 'todo' };
 }
 
@@ -326,7 +340,9 @@ export function parseStoredState(raw: string): MovingState {
   const value: unknown = JSON.parse(raw);
   if (!isRecord(value) || value.version !== 1 || !isRecord(value.profile) || !isRecord(value.progress)) throw new Error('Ugyldig lagret plan');
   const p = value.profile;
-  if (!['', 'alone', 'partner'].includes(String(p.household)) || !['', 'rent', 'own'].includes(String(p.fromTenure)) || !['', 'rent', 'own'].includes(String(p.toTenure))) throw new Error('Ugyldige boligvalg');
+  if (p.subscriptions !== undefined && (!Array.isArray(p.subscriptions) || !p.subscriptions.every((id) => subscriptionOptions.some((option) => option.id === id)))) throw new Error('Ugyldige abonnementsvalg');
+  if (!['', 'alone', 'partner'].includes(String(p.household)) || !['', 'rent', 'own', 'other'].includes(String(p.fromTenure)) || !['', 'rent', 'own', 'other'].includes(String(p.toTenure))) throw new Error('Ugyldige boligvalg');
+  for (const key of ['fromHomeKind', 'toHomeKind']) if (p[key] !== undefined && !homeKinds.includes(p[key] as HomeKind)) throw new Error('Ugyldig boligtype');
   for (const key of ['fromAddress', 'toAddress', 'moveDate']) if (typeof p[key] !== 'string' || p[key].length > 500) throw new Error('Ugyldig tekst');
   if (p.handoverDate !== undefined && (typeof p.handoverDate !== 'string' || p.handoverDate.length > 20)) throw new Error('Ugyldig overtakelsesdato');
   for (const key of ['dateUnknown', 'student', 'children', 'schoolChange', 'newParent', 'retired']) if (typeof p[key] !== 'boolean') throw new Error('Ugyldig valg');
@@ -334,11 +350,13 @@ export function parseStoredState(raw: string): MovingState {
   // Only copy known fields; do not merge arbitrary stored objects into application state.
   const profile: MovingProfile = {
     household: p.household as Household, fromTenure: p.fromTenure as Tenure, toTenure: p.toTenure as Tenure,
+    fromHomeKind: (p.fromHomeKind ?? 'leilighet') as HomeKind, toHomeKind: (p.toHomeKind ?? 'enebolig') as HomeKind,
     fromAddress: p.fromAddress as string, toAddress: p.toAddress as string, moveDate: p.moveDate as string,
     moveOutDate: typeof p.moveOutDate === 'string' && p.moveOutDate.length <= 20 ? p.moveOutDate : '',
     handoverDate: typeof p.handoverDate === 'string' ? p.handoverDate : '',
     dateUnknown: p.dateUnknown as boolean, student: p.student as boolean, children: p.children as boolean,
     schoolChange: p.schoolChange as boolean, newParent: p.newParent as boolean, retired: p.retired as boolean,
+    subscriptions: p.subscriptions === undefined ? [] : [...new Set(p.subscriptions as Subscription[])],
   };
   if (profile.moveOutDate && !validDate(profile.moveOutDate)) throw new Error('Ugyldig utflyttingsdato');
   if (profile.handoverDate && !validDate(profile.handoverDate)) throw new Error('Ugyldig overtakelsesdato');

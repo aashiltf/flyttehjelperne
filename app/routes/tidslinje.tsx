@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import type { Route } from './+types/tidslinje';
 import { useMoving } from '~/components/moving-provider';
-import { TaskDetail, TaskList, TimelineView } from '~/components/plan-views';
+import { MoveSummary } from '~/components/move-summary';
+import { TaskList } from '~/components/plan-views';
+import { TimelineView } from '~/components/timeline-view';
 import { HouseIllustration, Icon, Shell } from '~/components/ui';
-import { demoState, formatDate, hasMoveDate, validDate, generatePlan, getProgress, summarize } from '~/lib/moving-plan';
+import { demoState, generatePlan, summarize } from '~/lib/moving-plan';
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: 'Din flytteplan – Flyttehjelpen' }, { name: 'description', content: 'Se oppgaver for overtakelse og innflytting som tidslinje eller som en liste du kan krysse av.' }];
@@ -19,24 +21,20 @@ export default function Plan() {
   const view: View = params.get('visning') === 'oppgaver' ? 'oppgaver' : 'tidslinje';
   const tasks = generatePlan(state.profile);
   const stats = summarize(tasks, state);
-  const next = tasks.find((task) => getProgress(state, task).status !== 'done');
   const selected = params.get('oppgave');
-  const [showTimeline, setShowTimeline] = useState(true);
-  const current = tasks.find((task) => task.id === selected) ?? next ?? tasks[0];
-  const detail = useRef<HTMLDivElement>(null);
+  const [verticalTimeline, setVerticalTimeline] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const resetDialog = useRef<HTMLDialogElement>(null);
-  const p = state.profile;
 
   useEffect(() => {
-    // Wait for the saved profile before resolving missing or outdated task IDs.
-    if (!ready || !state.created || !current || selected === current.id) return;
+    // Remove stale links after profile edits; leave the timeline unselected on arrival.
+    if (!ready || !selected || tasks.some((task) => task.id === selected)) return;
     setParams((previous) => {
       const updated = new URLSearchParams(previous);
-      updated.set('oppgave', current.id);
+      updated.delete('oppgave');
       return updated;
     }, { replace: true, preventScrollReset: true });
-  }, [ready, state.created, current?.id, selected, setParams]);
+  }, [ready, selected, tasks, setParams]);
 
   useEffect(() => {
     if (confirmReset) resetDialog.current?.showModal();
@@ -55,25 +53,21 @@ export default function Plan() {
   function select(id: string) {
     setParams((previous) => {
       const updated = new URLSearchParams(previous);
-      updated.set('oppgave', id);
+      if (updated.get('oppgave') === id) updated.delete('oppgave');
+      else updated.set('oppgave', id);
       updated.delete('visning');
       return updated;
     }, { preventScrollReset: true });
-    window.setTimeout(() => detail.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'nearest' }), 0);
   }
 
   if (ready && !state.created) return <Shell><main className="mx-auto max-w-xl px-5 py-16 text-center"><HouseIllustration /><h1 className="text-3xl font-semibold tracking-tight">Flytteplanen din starter her</h1><p className="mt-3 text-kveld-500">Fortell oss hvor, når og med hvem du flytter, så lager vi en plan som passer deg.</p><Link className="button-primary mt-6" to="/">Lag min flytteplan<Icon name="arrow" /></Link></main></Shell>;
 
   return <Shell><main className="mx-auto max-w-5xl px-5 pb-8 pt-8 sm:px-8 sm:pt-12">
-    <div className="flex flex-wrap items-center justify-between gap-3"><p className="eyebrow">Din flytteplan</p><Link className="text-sm font-semibold text-syrin-600 underline underline-offset-4" to="/">Endre svarene mine</Link></div>
+    <p className="eyebrow">Din flytteplan</p>
     <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Din vei til et nytt hjem</h1>
 
-    <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-kveld-50 px-5 py-4 text-sm">
-        <div className="flex min-w-0 items-center gap-2.5"><Icon name="pin" className="text-syrin-600" /><div className="min-w-0"><p className="text-xs text-kveld-500">Fra{validDate(p.moveOutDate) ? ` · ut ${formatDate(p.moveOutDate)}` : ''}</p><p className="break-words font-medium">{p.fromAddress}</p></div></div>
-        <Icon name="arrow" className="hidden text-kveld-300 sm:block" />
-        <div className="flex min-w-0 items-center gap-2.5"><Icon name="home" className="text-syrin-600" /><div className="min-w-0"><p className="text-xs text-kveld-500">Til</p><p className="break-words font-medium">{p.toAddress}</p><p className="mt-1 text-xs text-kveld-500">Overtakelse: {validDate(p.handoverDate) ? formatDate(p.handoverDate, true) : 'Ikke avklart'}</p><p className="mt-1 text-xs text-kveld-500">Innflytting: {hasMoveDate(p) ? formatDate(p.moveDate, true) : 'Ikke avklart'}</p></div></div>
-      </div>
+    <div className="mt-6 grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <MoveSummary />
       <div className="flex items-center gap-4 rounded-2xl bg-sol px-5 py-4">
         <p className="text-3xl font-semibold tracking-tight">{stats.done}<span className="text-base font-normal text-kveld-500"> / {stats.total}</span></p>
         <div><p className="text-sm font-semibold">oppgaver gjort</p><progress aria-label="Gjennomførte oppgaver" className="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full [&::-moz-progress-bar]:bg-syrin-500 [&::-webkit-progress-bar]:bg-white [&::-webkit-progress-value]:bg-syrin-500" value={stats.done} max={Math.max(stats.total, 1)} /></div>
@@ -88,14 +82,13 @@ export default function Plan() {
     <div className="mt-6">
       {view === 'tidslinje' ? <>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-kveld-500">{showTimeline ? <>Trykk på en oppgave for å se hva du skal gjøre.<span className="sm:hidden"> Sveip sidelengs for å se hele tidslinjen.</span></> : 'Tidslinjen er skjult. Vis den igjen for å velge en annen oppgave.'}</p>
-          <button type="button" className="button-secondary shrink-0" aria-expanded={showTimeline} aria-controls="plan-timeline" onClick={() => setShowTimeline((shown) => !shown)}>
-            <Icon name="timeline" className="h-4 w-4" />{showTimeline ? 'Skjul tidslinje' : 'Vis tidslinje'}
+          <p className="text-sm text-kveld-500">{verticalTimeline ? 'Oppgavene står til høyre for linjen. Trykk for å åpne en oppgave.' : 'Trykk på en sirkel for å se oppgavene for datoen.'}</p>
+          <button type="button" className="button-secondary shrink-0" aria-pressed={verticalTimeline} aria-controls="plan-timeline" onClick={() => setVerticalTimeline((shown) => !shown)}>
+            <Icon name="timeline" className="h-4 w-4" />{verticalTimeline ? 'Vis kompakt tidslinje' : 'Vis oppgaver på tidslinjen'}
           </button>
         </div>
-        <div id="plan-timeline" hidden={!showTimeline}><TimelineView tasks={tasks} selected={current?.id ?? null} onSelect={select} /></div>
-        <div ref={detail} className="mx-auto mt-6 max-w-2xl scroll-mt-6">{current && <TaskDetail task={current} />}</div>
-      </> : <TaskList tasks={tasks} onShowInTimeline={(id) => { setShowTimeline(true); select(id); }} />}
+        <div id="plan-timeline"><TimelineView tasks={tasks} selected={selected} onSelect={select} vertical={verticalTimeline} /></div>
+      </> : <TaskList tasks={tasks} onShowInTimeline={(id) => { setVerticalTimeline(false); select(id); }} />}
     </div>
 
     <p className="mt-10 text-xs leading-6 text-kveld-500">Tidspunktene er anbefalinger, ikke bindende frister. Sjekk avtaler og gjeldende regler hos den aktuelle tjenesten.</p>

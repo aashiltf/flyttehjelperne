@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { homeKinds, type HomeKind } from '~/lib/moving-plan';
+import { Icon } from './ui';
 
 /*
  * Mock av boligopplysninger. I en ekte løsning ville dette komme fra et
- * boligregister (f.eks. Matrikkelen). Her lager vi en fast «tilfeldig» bolig
- * ut fra adresseteksten, slik at samme adresse alltid gir samme svar.
+ * boligregister (f.eks. Matrikkelen). Boligtypen settes per side i skjemaet,
+ * mens øvrige eksempelopplysninger er stabile for samme adresse og boligtype.
  */
 
-type HomeKind = 'leilighet' | 'rekkehus' | 'enebolig' | 'tomannsbolig';
 type HomeFacts = { kind: HomeKind; title: string; size: number; rooms: number; built: number; floor?: number };
 
 const titles: Record<HomeKind, string> = { leilighet: 'Leilighet', rekkehus: 'Rekkehus', enebolig: 'Enebolig', tomannsbolig: 'Tomannsbolig' };
@@ -17,10 +18,8 @@ function hash(text: string) {
   return value >>> 0;
 }
 
-export function mockHome(address: string): HomeFacts {
+export function mockHome(address: string, kind: HomeKind): HomeFacts {
   const h = hash(address);
-  const kinds: HomeKind[] = ['leilighet', 'leilighet', 'leilighet', 'rekkehus', 'enebolig', 'tomannsbolig'];
-  const kind = kinds[h % kinds.length];
   const base = { leilighet: [38, 70], rekkehus: [85, 60], enebolig: [110, 80], tomannsbolig: [95, 70] }[kind];
   const size = base[0] + ((h >>> 3) % base[1]);
   return {
@@ -33,8 +32,8 @@ export function mockHome(address: string): HomeFacts {
   };
 }
 
-export function homeKindLabel(address: string) {
-  return address.trim().length >= 6 ? mockHome(address).title : '';
+export function homeKindLabel(address: string, kind: HomeKind) {
+  return address.trim().length >= 6 ? titles[kind] : '';
 }
 
 function HomeIcon({ kind }: { kind: HomeKind }) {
@@ -68,31 +67,18 @@ function HomeIcon({ kind }: { kind: HomeKind }) {
   </svg>;
 }
 
-const fetched = new Set<string>();
-
-export function HomeTypePreview({ address }: { address: string }) {
+export function HomeTypePreview({ address, kind, onChange, label }: { address: string; kind: HomeKind; onChange: (kind: HomeKind) => void; label: string }) {
   const ready = address.trim().length >= 6;
-  const [shown, setShown] = useState(() => (fetched.has(address) ? address : ''));
-
-  useEffect(() => {
-    if (!ready) { setShown(''); return; }
-    if (fetched.has(address)) { setShown(address); return; }
-    const timer = window.setTimeout(() => { fetched.add(address); setShown(address); }, 700);
-    return () => window.clearTimeout(timer);
-  }, [address, ready]);
+  const [editing, setEditing] = useState(false);
 
   if (!ready) return null;
-  if (shown !== address) return <div role="status" className="flex items-center gap-3 rounded-2xl bg-white/70 p-3 text-sm text-kveld-500">
-    <span className="h-12 w-16 shrink-0 animate-pulse rounded-xl bg-kveld-100" />Henter boligopplysninger …
-  </div>;
-
-  const home = mockHome(address);
-  return <div role="status" className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_0_0_1px_var(--color-kveld-100)]">
+  const home = mockHome(address, kind);
+  return <div className="relative flex items-center gap-3 rounded-2xl bg-white p-3 pr-14 shadow-[0_0_0_1px_var(--color-kveld-100)]">
     <HomeIcon kind={home.kind} />
     <div className="min-w-0 flex-1">
-      <p className="font-semibold text-kveld-900">{home.title}</p>
+      {editing ? <label className="block text-xs font-semibold text-kveld-500">Boligtype<select autoFocus className="text-input mt-1" value={kind} onChange={(event) => { onChange(event.target.value as HomeKind); setEditing(false); }}>{homeKinds.map((value) => <option key={value} value={value}>{titles[value]}</option>)}</select></label> : <p className="font-semibold text-kveld-900">{home.title}</p>}
       <p className="text-xs leading-5 text-kveld-500">{home.size} m² · {home.rooms} {home.rooms === 1 ? 'rom' : 'rom'}{home.floor ? ` · ${home.floor}. etasje` : ''} · bygget {home.built}</p>
     </div>
-    <span className="self-start rounded-full bg-kveld-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-kveld-500">Eksempel</span>
+    <button type="button" className="absolute right-1 top-1 grid h-11 w-11 place-items-center rounded-lg text-kveld-500 hover:bg-kveld-50" aria-label={`Endre boligtype ${label}`} aria-expanded={editing} onClick={() => setEditing(!editing)}><Icon name="edit" className="h-4 w-4" /></button>
   </div>;
 }

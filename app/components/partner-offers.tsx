@@ -30,7 +30,7 @@ export function PartnerOffers({ taskId }: { taskId: string }) {
             {offer.price && <p><span className="text-3xl font-semibold tracking-tight">{new Intl.NumberFormat('nb-NO', { style: 'currency', currency: offer.price.currency, maximumFractionDigits: 2 }).format(offer.price.amount)}</span><span className="text-sm text-kveld-700"> / {offer.price.period === 'month' ? 'måned' : 'år'}</span></p>}
             <a className="button-primary" href={offer.link.href}>{offer.link.label}<Icon name="arrow" className="h-4 w-4" /></a>
           </div>
-          <p className="mt-3 text-xs leading-5 text-kveld-700">{offer.disclaimer}</p>
+          {offer.disclaimer && <p className="mt-3 text-xs leading-5 text-kveld-700">{offer.disclaimer}</p>}
         </li>)}
       </ul>}
     </div>

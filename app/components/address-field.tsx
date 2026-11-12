@@ -65,8 +65,8 @@ export function AddressField({ label, value, onChange }: { label: string; value:
         <span className="block font-semibold">{address.adressetekst}</span><span className="text-kveld-500">{address.postnummer} {address.poststed}</span>
       </li>)}
     </ul>}
-    <p id={`${id}-help`} role="status" className="mt-2 text-xs leading-5 text-kveld-500">
-      {status === 'loading' ? 'Søker etter adresser …' : status === 'error' ? 'Adressesøket er utilgjengelig. Du kan skrive adressen selv.' : status === 'empty' ? 'Ingen forslag funnet. Du kan bruke adressen du har skrevet.' : 'Adresseforslag fra Kartverket. Du kan også skrive adressen selv.'}
+    <p id={`${id}-help`} role="status" className={status === 'idle' ? 'sr-only' : 'mt-2 text-xs leading-5 text-kveld-500'}>
+      {status === 'loading' ? 'Søker etter adresser …' : status === 'error' ? 'Adressesøket er utilgjengelig. Du kan skrive adressen selv.' : status === 'empty' ? 'Ingen forslag funnet. Du kan bruke adressen du har skrevet.' : ''}
     </p>
   </div>;
 }
