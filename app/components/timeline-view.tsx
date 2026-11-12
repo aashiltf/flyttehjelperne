@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { addDays, formatDate, getProgress, hasMoveDate, relativeLabel, taskAnchorDate, validDate, type MovingProfile, type MovingTask } from '~/lib/moving-plan';
 import { useMoving } from './moving-provider';
 import { TaskDetail } from './plan-views';
-import { Icon } from './ui';
+import { DoneBadge, Icon } from './ui';
 
 type DateGroup = { id: string; date: string; tasks: MovingTask[]; milestones: string[]; today: boolean };
 
@@ -40,9 +40,9 @@ const specialDays = [
 function DayCard({ task, title, icon, open, onToggle, today }: { task: MovingTask; title: string; icon: 'arrow' | 'key' | 'home'; open: boolean; onToggle: () => void; today: boolean }) {
   const { state, update } = useMoving();
   const progress = getProgress(state, task);
-  return <section className="w-full rounded-2xl border-[3px] border-syrin-500 bg-syrin-100 text-kveld-900">
+  return <section className={`w-full rounded-2xl border-[3px] text-kveld-900 ${progress.status === 'done' ? 'border-syrin-300 bg-syrin-50' : 'border-syrin-500 bg-syrin-100'}`}>
     <h3><button type="button" className="flex w-full items-center gap-3 p-4 text-left" aria-expanded={open} aria-controls={`day-${task.id}`} onClick={onToggle}>
-      <Icon name={icon} className="text-syrin-600" /><span className="min-w-0 flex-1 text-base font-semibold">{title}</span>{progress.status === 'done' && <Icon name="check" className="text-ok-500" />}<Icon name="chevron" className={`h-4 w-4 text-syrin-600 ${open ? '-rotate-90' : 'rotate-90'}`} />
+      <Icon name={icon} className="text-syrin-600" /><span className="min-w-0 flex-1 text-base font-semibold">{title}</span>{progress.status === 'done' && <DoneBadge />}<Icon name="chevron" className={`h-4 w-4 text-syrin-600 ${open ? '-rotate-90' : 'rotate-90'}`} />
     </button></h3>
     <div id={`day-${task.id}`} hidden={!open} className="border-t border-syrin-300 px-4 pb-4 pt-3">
       {today && <p className="mb-2 text-sm font-semibold">Dette skjer i dag</p>}
@@ -88,7 +88,7 @@ export function TimelineView({ tasks, selected, onSelect }: { tasks: MovingTask[
           <div className="space-y-4">
             {days.map((day) => <DayCard key={day.task.id} task={day.task} title={day.title} icon={day.icon} today={group.today} open={expandedDays[day.task.id] ?? selected === day.task.id} onToggle={() => toggleDay(day.task.id)} />)}
             {regular.map((task) => <div key={task.id} className="w-full">
-              {selected === task.id ? <><button type="button" className="mb-2 min-h-11 text-sm font-semibold text-syrin-600" onClick={() => onSelect(task.id)}>Lukk oppgaven</button><TaskDetail task={task} hideTiming={Boolean(group.date)} /></> : <button type="button" className="flex w-full items-start gap-3 rounded-2xl border border-syrin-300 bg-syrin-100 p-4 text-left text-kveld-900 hover:border-syrin-600" aria-expanded={false} onClick={() => onSelect(task.id)}><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{task.title}</span><span className="mt-1 block text-sm leading-6 text-kveld-700">{task.summary}</span>{!group.date && <span className="mt-2 block text-xs text-kveld-700">{relativeLabel(task.offset, task.dateAnchor)}</span>}</span>{getProgress(state, task).status === 'done' ? <Icon name="check" className="text-ok-500" /> : <Icon name="chevron" className="h-4 w-4 text-syrin-600" />}</button>}
+              {selected === task.id ? <><button type="button" className="mb-2 min-h-11 text-sm font-semibold text-syrin-600" onClick={() => onSelect(task.id)}>Lukk oppgaven</button><TaskDetail task={task} hideTiming={Boolean(group.date)} /></> : <button type="button" className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left text-kveld-900 ${getProgress(state, task).status === 'done' ? 'border-syrin-200 bg-syrin-50 hover:border-syrin-300' : 'border-syrin-300 bg-syrin-100 hover:border-syrin-600'}`} aria-expanded={false} onClick={() => onSelect(task.id)}><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{task.title}</span><span className="mt-1 block text-sm leading-6 text-kveld-700">{task.summary}</span>{!group.date && <span className="mt-2 block text-xs text-kveld-700">{relativeLabel(task.offset, task.dateAnchor)}</span>}</span>{getProgress(state, task).status === 'done' ? <DoneBadge /> : <Icon name="chevron" className="h-4 w-4 text-syrin-600" />}</button>}
             </div>)}
           </div>
         </div>

@@ -75,11 +75,10 @@ function whoSummary(p: MovingProfile) {
 }
 
 export default function Home() {
-  const { state, update, ready } = useMoving();
+  const { state, update } = useMoving();
   const navigate = useNavigate();
   const { profile } = state;
   const [openField, setOpenField] = useState<FieldId | null>(null);
-  const initialised = useRef(false);
   const [showErrors, setShowErrors] = useState(false);
   const [building, setBuilding] = useState(false);
   const errorSummary = useRef<HTMLDivElement>(null);
@@ -91,13 +90,6 @@ export default function Home() {
   useEffect(() => {
     if (showErrors && errors.length) errorSummary.current?.focus();
   }, [showErrors]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    // Åpne første felt for nye besøkende, først når lagrede svar er lest inn.
-    if (!ready || initialised.current) return;
-    initialised.current = true;
-    if (!profile.fromAddress && !profile.toAddress) setOpenField('where');
-  }, [ready, profile.fromAddress, profile.toAddress]);
 
   const close = useCallback(() => setOpenField(null), []);
 
@@ -142,9 +134,9 @@ export default function Home() {
         <div className="relative mx-auto max-w-2xl px-5 pb-10 pt-12 sm:px-8 sm:pt-20">
           <section className="mb-8 sm:mb-10">
             <h1 className="max-w-xl text-3xl font-semibold leading-tight tracking-tight text-kveld-900 sm:text-5xl">
-              Alle oppgaver samlet på ett sted
+              Fra kaos til kontroll
             </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-kveld-500">
+            <p className="mt-5 max-w-lg text-lg leading-8 text-kveld-500 sm:text-xl">
               Se hva du må gjøre før, under og etter flyttingen.
             </p>
           </section>
@@ -172,7 +164,7 @@ export default function Home() {
 
             <ExpandableField
               number={1}
-              title="Fra og til"
+              title="Hvor flytter du til?"
               summary={whereSummary(profile)}
               complete={where.length === 0}
               open={openField === 'where'}

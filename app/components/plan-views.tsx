@@ -1,5 +1,5 @@
 import { useMoving } from './moving-provider';
-import { Icon } from './ui';
+import { DoneBadge, Icon } from './ui';
 import { PartnerOffers } from './partner-offers';
 import { hasPartnerOffers } from '~/lib/partner-offers';
 import { addDays, categories, hasMoveDate, getProgress, taskTimingLabel, taskDeadlineDates, taskAnchorDate, taskTimelineDay, type Category, type MovingTask, type TaskProgress } from '~/lib/moving-plan';
@@ -34,13 +34,11 @@ function TaskRow({ task, onShowInTimeline }: { task: MovingTask; onShowInTimelin
   const { state } = useMoving();
   const { done } = useTaskProgress(task);
   const date = taskDate(state.profile, task);
-  return <li className={`flex items-start gap-3 rounded-2xl p-4 transition ${done ? 'bg-kveld-50' : 'bg-white shadow-[0_0_0_1px_var(--color-kveld-100)]'}`}>
-    <span role="img" aria-label={done ? 'Gjennomført' : 'Ikke fullført'} className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${done ? 'bg-ok-300 text-white' : 'bg-white shadow-[inset_0_0_0_2px_var(--color-kveld-300)]'}`}>
-      {done && <Icon name="check" className="h-4 w-4" />}
-    </span>
+  return <li className={`flex items-start gap-3 rounded-2xl p-4 transition ${done ? 'bg-syrin-50 shadow-[0_0_0_1px_var(--color-syrin-200)]' : 'bg-white shadow-[0_0_0_1px_var(--color-kveld-100)]'}`}>
+    {!done && <span role="img" aria-label="Ikke fullført" className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-white shadow-[inset_0_0_0_2px_var(--color-kveld-300)]" />}
     <div className="min-w-0 flex-1">
-      <button type="button" onClick={onShowInTimeline} className={`block rounded-sm text-left font-semibold ${done ? 'text-kveld-500 line-through decoration-kveld-300' : 'text-kveld-900'}`}>{task.title}</button>
-      <span className={`mt-0.5 block text-sm leading-6 ${done ? 'text-kveld-300' : 'text-kveld-500'}`}>{task.summary}</span>
+      <div className="flex flex-wrap items-center gap-2"><button type="button" onClick={onShowInTimeline} className="block rounded-sm text-left font-semibold text-kveld-900">{task.title}</button>{done && <DoneBadge />}</div>
+      <span className="mt-0.5 block text-sm leading-6 text-kveld-700">{task.summary}</span>
       <span className="mt-1.5 block text-xs font-medium text-kveld-500">{taskTimingLabel(task)}{date && ` · ${date}`}</span>
     </div>
     <button type="button" onClick={onShowInTimeline} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-syrin-600 hover:bg-syrin-50" aria-label={`Vis «${task.title}» i tidslinjen`}><Icon name="timeline" /></button>
@@ -73,11 +71,11 @@ export function TaskDetail({ task, hideTiming = false }: { task: MovingTask; hid
   const date = taskDate(state.profile, task);
 
   return <div aria-live="polite">
-    <article className="relative z-10 rounded-3xl bg-white p-5 shadow-[0_0_0_1px_var(--color-kveld-100),0_24px_60px_-34px_rgba(20,26,69,0.35)] sm:p-7">
+    <article className={`relative z-10 rounded-3xl p-5 sm:p-7 ${done ? 'bg-syrin-50 shadow-[0_0_0_1px_var(--color-syrin-200)]' : 'bg-white shadow-[0_0_0_1px_var(--color-kveld-100),0_24px_60px_-34px_rgba(20,26,69,0.35)]'}`}>
       <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
         <span className={`rounded-full px-2.5 py-1 ${categoryStyle[task.category]}`}>{categoryName[task.category]}</span>
         {!hideTiming && <span className="text-kveld-500">{taskTimingLabel(task)}{date && ` · ${date}`}</span>}
-        {done && <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-ok-100 px-2.5 py-1 text-ok-500"><Icon name="check" className="h-3.5 w-3.5" />Gjennomført</span>}
+        {done && <span className="ml-auto"><DoneBadge /></span>}
       </div>
       <h2 className="mt-4 text-2xl font-semibold tracking-tight">{task.title}</h2>
       <p className="mt-2 text-base leading-7 text-kveld-500">{task.summary}</p>

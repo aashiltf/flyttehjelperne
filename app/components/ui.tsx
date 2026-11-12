@@ -26,6 +26,10 @@ export function Icon({ name, className = '' }: { name: 'home' | 'arrow' | 'check
   return <svg aria-hidden="true" className={`h-5 w-5 shrink-0 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
 
+export function DoneBadge() {
+  return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-kveld-900"><Icon name="check" className="h-5 w-5 text-ok-500" />Utført</span>;
+}
+
 export function Shell({ children, showFooter = true }: { children: ReactNode; showFooter?: boolean }) {
   const { storageError, ready } = useMoving();
   return <div className="min-h-screen text-kveld-900">
