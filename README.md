@@ -22,14 +22,18 @@ og overtakelse én uke før innflytting.
   er valgfrie; overtakelse og innflytting kan være samme eller ulike dager. Feltene åpnes ved klikk inni og
   lukkes ved klikk utenfor, og viser et sammendrag når de er lukket.
 - Planen på `/tidslinje` kan vises som tidslinje eller som oppgaveliste
-  (`?visning=oppgaver`).
+  (`?visning=oppgaver`). Aktiv oppgave lagres i URL-en, for eksempel
+  `?oppgave=insurance`, og beholdes ved oppdatering og tilbake-/fremnavigasjon.
+  Ukjente eller ikke lenger relevante oppgave-ID-er erstattes med en oppgave
+  fra den lokale planen. Lenken deler ikke selve planen med andre nettlesere.
 - Oppgaver for forsikring, strøm, forberedelse og dokumentasjon knyttes til
   overtakelsen. Pakking, transport og en egen innflyttingsoppgave følger innflytting.
 - Tidslinjen viser markører for i dag, utflytting, overtakelse og innflytting.
   Med begge datoer kjent plasseres oppgavene på en felles tidsakse. Ellers er
   plasseringen skjematisk og merket som dette; hver oppgave viser hvilken milepæl
   tidspunktet gjelder. Valgt oppgave vises i et kort under, med et
-  lite Gjensidige-påheng (demo).
+   lite Gjensidige-påheng (demo). Forsikringsoppgaven viser Gjensidige
+   innboforsikring med logo og «Best i test» for Innbo Pluss, med kilde og testdato.
 - Oppgavelisten er gruppert i Formelle, Praktiske og Annet, og kan krysses av.
 - Farger fra palett v2 («lett og trygg», se `../palett/v2.html`).
 - «Start på nytt» for å slette planen eller laste eksempelreisen på nytt.
@@ -53,6 +57,29 @@ godtas også hvis tjenesten ikke svarer. Ingen miljøvariabler kreves.
 Oppgaveinnhold er veiledende demoeksempler. Anbefalte tidspunkter er ikke
 juridiske frister. Dekning og aktuelle krav må avklares hos riktig tilbyder
 eller offentlig tjeneste.
+
+## Partnertilbud (mock)
+
+- `app/lib/partner-offers.ts` definerer tilbudskontrakten, hvilke oppgaver som
+  har tilbud, og en asynkron `PartnerOfferSource`. Legg til en oppgave-ID i
+  `offersByTask` for å vise ett eller flere tilbud på den oppgaven.
+- `app/routes/partner-offers.tsx` henter tilbud gjennom en `clientLoader`.
+  `app/components/partner-offers.tsx` bruker en React Router-fetcher og viser
+  lasting, tomt resultat og feil med mulighet til å prøve igjen.
+- Mocken sender ingen profilopplysninger. Prisen på 149 kr/måned er fiktiv og
+  overføres ikke til nettbutikken. «Kjøp forsikring» går til innboflyten på
+  `www.testgjensidige.no`. Tilbud påvirker ikke oppgavens fullføring. Logoen i
+  `public/gjensidige-logo.svg` er hentet fra Gjensidiges offentlige nettside.
+  Testmerket gjelder Innbo Pluss i Smarte pengers test fra oktober 2024,
+  slik det er beskrevet på Gjensidiges produktside.
+- For et ekte API: bytt standardkilden i `getPartnerOffers` med et kall til en
+  backend som returnerer `PartnerOffer[]`. Viderefør `AbortSignal`, håndter
+  HTTP-feil og valider svaret (inkludert logo og tillatte HTTPS-lenker) før det
+  returneres til visningen. Oppgaveregisteret kan beholdes separat fra tilbudsdata.
+  Med dagens statiske hosting må backend driftes separat. Alternativt kan appen
+  få serverkjøring og en server-loader med en `.server`-integrasjon. API-nøkler
+  og leverandørkall med hemmeligheter skal aldri ligge i klienten. Eventuell
+  deling av personopplysninger må avklares før integrasjonen tas i bruk.
 
 ## Kvalitetssjekker
 

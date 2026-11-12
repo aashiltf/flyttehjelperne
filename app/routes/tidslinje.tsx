@@ -20,7 +20,7 @@ export default function Plan() {
   const tasks = generatePlan(state.profile);
   const stats = summarize(tasks, state);
   const next = tasks.find((task) => getProgress(state, task.id).status !== 'done');
-  const [selected, setSelected] = useState<string | null>(null);
+  const selected = params.get('oppgave');
   const [showTimeline, setShowTimeline] = useState(true);
   const current = tasks.find((task) => task.id === selected) ?? next ?? tasks[0];
   const detail = useRef<HTMLDivElement>(null);
@@ -29,16 +29,36 @@ export default function Plan() {
   const p = state.profile;
 
   useEffect(() => {
+    // Wait for the saved profile before resolving missing or outdated task IDs.
+    if (!ready || !state.created || !current || selected === current.id) return;
+    setParams((previous) => {
+      const updated = new URLSearchParams(previous);
+      updated.set('oppgave', current.id);
+      return updated;
+    }, { replace: true, preventScrollReset: true });
+  }, [ready, state.created, current?.id, selected, setParams]);
+
+  useEffect(() => {
     if (confirmReset) resetDialog.current?.showModal();
     else resetDialog.current?.close();
   }, [confirmReset]);
 
   function setView(next: View) {
-    setParams(next === 'oppgaver' ? { visning: 'oppgaver' } : {}, { replace: true });
+    setParams((previous) => {
+      const updated = new URLSearchParams(previous);
+      if (next === 'oppgaver') updated.set('visning', 'oppgaver');
+      else updated.delete('visning');
+      return updated;
+    }, { replace: true, preventScrollReset: true });
   }
 
   function select(id: string) {
-    setSelected(id);
+    setParams((previous) => {
+      const updated = new URLSearchParams(previous);
+      updated.set('oppgave', id);
+      updated.delete('visning');
+      return updated;
+    }, { preventScrollReset: true });
     window.setTimeout(() => detail.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'nearest' }), 0);
   }
 
@@ -75,7 +95,7 @@ export default function Plan() {
         </div>
         <div id="plan-timeline" hidden={!showTimeline}><TimelineView tasks={tasks} selected={current?.id ?? null} onSelect={select} /></div>
         <div ref={detail} className="mx-auto mt-6 max-w-2xl scroll-mt-6">{current && <TaskDetail task={current} />}</div>
-      </> : <TaskList tasks={tasks} onShowInTimeline={(id) => { setShowTimeline(true); setView('tidslinje'); select(id); }} />}
+      </> : <TaskList tasks={tasks} onShowInTimeline={(id) => { setShowTimeline(true); select(id); }} />}
     </div>
 
     <p className="mt-10 text-xs leading-6 text-kveld-500">Tidspunktene er anbefalinger, ikke bindende frister. Sjekk avtaler og gjeldende regler hos den aktuelle tjenesten.</p>
@@ -83,7 +103,7 @@ export default function Plan() {
 
     <dialog ref={resetDialog} onCancel={() => setConfirmReset(false)} onClose={() => setConfirmReset(false)} aria-labelledby="reset-title" className="fixed inset-0 m-auto max-w-md rounded-3xl border-0 p-6 text-kveld-900 shadow-2xl backdrop:bg-kveld-900/40">
       <h2 id="reset-title" className="text-xl font-semibold">Starte med blanke ark?</h2><p className="mt-3 text-sm leading-6 text-kveld-500">Dette erstatter svar og avkryssinger i denne nettleseren.</p>
-      <div className="mt-5 flex flex-col gap-2"><button className="button-primary" type="button" onClick={() => { reset(); setConfirmReset(false); void navigate('/'); }}>Slett planen og start på nytt</button><button className="button-secondary" type="button" onClick={() => { update(() => demoState()); setSelected(null); setConfirmReset(false); }}>Start eksempelreisen på nytt</button><button autoFocus className="button-secondary" type="button" onClick={() => setConfirmReset(false)}>Behold planen</button></div>
+      <div className="mt-5 flex flex-col gap-2"><button className="button-primary" type="button" onClick={() => { reset(); setConfirmReset(false); void navigate('/'); }}>Slett planen og start på nytt</button><button className="button-secondary" type="button" onClick={() => { update(() => demoState()); setParams((previous) => { const updated = new URLSearchParams(previous); updated.delete('oppgave'); return updated; }, { replace: true, preventScrollReset: true }); setConfirmReset(false); }}>Start eksempelreisen på nytt</button><button autoFocus className="button-secondary" type="button" onClick={() => setConfirmReset(false)}>Behold planen</button></div>
     </dialog>
   </main></Shell>;
 }

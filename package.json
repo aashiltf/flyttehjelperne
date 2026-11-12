@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --test app/lib/moving-plan.test.ts",
+    "test": "node --experimental-strip-types --test app/lib/*.test.ts",
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",

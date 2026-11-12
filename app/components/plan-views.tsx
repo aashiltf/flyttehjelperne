@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMoving } from './moving-provider';
 import { Icon } from './ui';
+import { PartnerOffers } from './partner-offers';
+import { hasPartnerOffers } from '~/lib/partner-offers';
 import { addDays, categories, hasMoveDate, daysBetween, getProgress, relativeLabel, taskAnchorDate, taskTimelineDay, toIsoDate, validDate, type Category, type MovingTask, type TaskProgress } from '~/lib/moving-plan';
 
 const categoryStyle: Record<Category, string> = {
@@ -197,13 +199,13 @@ export function TaskDetail({ task }: { task: MovingTask }) {
           </li>)}
         </ul>
       </section>}
-      <fieldset className="mt-5"><legend className="text-sm font-semibold">Dette kan du gjøre</legend><div className="mt-2 space-y-1">
+      <fieldset className="mt-5"><legend className="text-sm font-semibold">Oppgaver</legend><div className="mt-2 space-y-1">
         {task.checks.map((text, index) => <label key={text} className="flex cursor-pointer items-start gap-3 rounded-lg py-2 text-sm leading-6 text-kveld-700"><input type="checkbox" className="check-input mt-1" checked={progress.checks[String(index)] ?? false} onChange={(event) => change({ checks: { ...progress.checks, [index]: event.target.checked } })} /><span>{text}</span></label>)}
       </div></fieldset>
       <p className="mt-3 rounded-2xl bg-kveld-50 p-3 text-sm leading-6 text-kveld-700"><strong className="font-semibold">Du er ferdig når:</strong> {task.doneWhen}</p>
       <button type="button" className={`mt-5 ${done ? 'button-secondary' : 'button-primary'}`} onClick={() => change({ status: done ? 'todo' : 'done' })}><Icon name={done ? 'arrow' : 'check'} className="h-4 w-4" />{done ? 'Åpne oppgaven igjen' : 'Marker som gjennomført'}</button>
     </article>
-    <aside aria-label="Fra Gjensidige" className="mx-3 -mt-5 rounded-b-3xl bg-syrin-100 px-5 pb-4 pt-9 sm:mx-6 sm:px-6">
+    {hasPartnerOffers(task.id) ? <PartnerOffers key={task.id} taskId={task.id} /> : <aside aria-label="Fra Gjensidige" className="mx-3 -mt-5 rounded-b-3xl bg-syrin-100 px-5 pb-4 pt-9 sm:mx-6 sm:px-6">
       <div className="flex items-start gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-syrin-600"><Icon name="shield" className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
@@ -213,6 +215,6 @@ export function TaskDetail({ task }: { task: MovingTask }) {
           {more && <p className="mt-2 text-xs leading-5 text-kveld-500">Demo: Her kan lenken gå videre til produktsiden hos Gjensidige.</p>}
         </div>
       </div>
-    </aside>
+    </aside>}
   </div>;
 }
