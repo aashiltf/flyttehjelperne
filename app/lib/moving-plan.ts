@@ -60,9 +60,11 @@ export type MovingTask = {
   why: string;
   phase: Phase;
   offset: number;
+  deadlineWindow?: { earliest: number; latest: number };
   dateAnchor: DateAnchor;
   checks: string[];
   checkKeys?: string[];
+  checkLinks?: Record<number, { label: string; href: string }>;
   doneWhen?: string;
   resources?: {
     description: string;
@@ -189,11 +191,15 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     question: { text: 'Følger internett med boligen?', options: ['Ja', 'Nei', 'Vet ikke ennå'] },
     doneWhen: 'Nødvendige tjenester er avklart, inkludert hvem som har ansvar for strøm fra overtakelsen og når internett skal være klart.',
   }, {
-    id: 'address', title: 'Planlegg adresseendringen', phase: 'before', offset: -7,
-    summary: 'Få oversikt over hvem som trenger den nye adressen.',
-    why: 'Adresseendring hos Folkeregisteret og Posten er separate ting. Undersøk gjeldende regler og tidspunkt hos hver av dem.',
-    checks: ['Jeg har sjekket hvordan og når jeg skal melde flytting til Folkeregisteret', 'Jeg har avklart adresseendring og eventuell videresending hos Posten', 'Jeg har fulgt opp andre som trenger adressen min'],
-    doneWhen: 'Du har fulgt opp adresseendringene som gjelder for deg hos de aktuelle tjenestene.',
+    id: 'address', title: 'Meld flytting og adresseendring', phase: 'before', offset: -31,
+    deadlineWindow: { earliest: -31, latest: 8 },
+    summary: 'Når du skal flytte må du melde flytting til Folkeregisteret og Posten.',
+    why: 'Sørg for at både Folkeregisteret og Posten får den nye adressen. Hos Posten kan du også samtykke til at flyttemeldingen sendes til Folkeregisteret.',
+    checks: ['Jeg har meldt flytting til Folkeregisteret hos Skatteetaten', 'Jeg har meldt adresseendring hos Posten og avklart eventuell videresending'],
+    checkLinks: {
+      0: { label: 'Meld flytting hos Skatteetaten', href: 'https://www.skatteetaten.no/person/folkeregister/flytte/i-norge/' },
+      1: { label: 'Meld flytting hos Posten', href: 'https://www.posten.no/adressetjenester/adresseendring' },
+    },
   }, {
     id: 'subscriptions', title: 'Endre eller si opp abonnementer', phase: 'before', offset: -10,
     summary: 'Strøm, internett, aviser, treningssenter og andre faste avtaler.',
@@ -284,6 +290,21 @@ export function relativeLabel(offset: number, anchor: DateAnchor = 'move'): stri
   const days = Math.abs(offset);
   const amount = days >= 14 && days % 7 === 0 ? `${days / 7} uker` : days === 7 ? '1 uke' : `${days} dager`;
   return `${amount} ${offset < 0 ? 'før' : 'etter'} ${event}`;
+}
+
+export function taskTimingLabel(task: MovingTask): string {
+  return task.deadlineWindow
+    ? `Frist: ${Math.abs(task.deadlineWindow.earliest)} dager før–${task.deadlineWindow.latest} dager etter innflytting`
+    : relativeLabel(task.offset, task.dateAnchor);
+}
+
+export function taskDeadlineDates(profile: MovingProfile, task: MovingTask): { earliest: string; latest: string } | null {
+  const anchor = taskAnchorDate(profile, task);
+  if (!task.deadlineWindow || !anchor) return null;
+  return {
+    earliest: suggestedDate(anchor, task.deadlineWindow.earliest),
+    latest: suggestedDate(anchor, task.deadlineWindow.latest),
+  };
 }
 
 /** Ukjente datoer beholdes relative til sin egen milepæl, aldri den andre datoen. */

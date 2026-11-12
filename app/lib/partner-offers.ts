@@ -9,6 +9,7 @@ export type PartnerOffer = {
   isDemo: boolean;
   disclaimer: string;
   link: { label: string; href: string };
+  secondaryLink?: { label: string; href: string };
 };
 
 /** Replace the mock with a backend request returning this same contract. */
@@ -16,6 +17,16 @@ export type PartnerOfferSource = (taskId: string, signal: AbortSignal) => Promis
 
 // Add task IDs here to enable the reusable offer panel on more tasks.
 const offersByTask: Record<string, PartnerOffer[]> = {
+  address: [{
+    id: 'huseierne-membership',
+    provider: 'Huseierne',
+    product: 'Gode rabatter når du flytter',
+    description: 'Huseierne har gode rabatter og tilbud som kan komme godt med i en flytteprosess. Som medlem får du tilgang til fordeler for deg og den nye boligen din.',
+    isDemo: false,
+    disclaimer: 'Medlemskap koster penger. Sjekk gjeldende medlemspris og vilkår for rabattene hos Huseierne.',
+    link: { label: 'Bli medlem her', href: 'https://bli-medlem.huseierne.no/privat/bli-medlem' },
+    secondaryLink: { label: 'Sjekk rabatter', href: 'https://www.huseierne.no/medlemskap/medlemsfordeler/rabatter/' },
+  }],
   insurance: [{
     id: 'gjensidige-contents-demo',
     provider: 'Gjensidige',

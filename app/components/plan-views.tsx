@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
 import { useMoving } from './moving-provider';
 import { Icon } from './ui';
 import { PartnerOffers } from './partner-offers';
 import { hasPartnerOffers } from '~/lib/partner-offers';
-import { addDays, categories, hasMoveDate, getProgress, relativeLabel, taskAnchorDate, taskTimelineDay, type Category, type MovingTask, type TaskProgress } from '~/lib/moving-plan';
+import { addDays, categories, hasMoveDate, getProgress, taskTimingLabel, taskDeadlineDates, taskAnchorDate, taskTimelineDay, type Category, type MovingTask, type TaskProgress } from '~/lib/moving-plan';
 
 const categoryStyle: Record<Category, string> = {
   formal: 'bg-himmel text-kveld-900',
@@ -13,6 +12,8 @@ const categoryStyle: Record<Category, string> = {
 const categoryName = Object.fromEntries(categories.map((category) => [category.id, category.title])) as Record<Category, string>;
 
 function taskDate(profile: Parameters<typeof hasMoveDate>[0], task: MovingTask) {
+  const deadline = taskDeadlineDates(profile, task);
+  if (deadline) return `${deadline.earliest}–${deadline.latest}`;
   const date = addDays(taskAnchorDate(profile, task), task.offset);
   return date ? new Intl.DateTimeFormat('nb-NO', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date) : '';
 }
@@ -39,7 +40,7 @@ function TaskRow({ task, onShowInTimeline }: { task: MovingTask; onShowInTimelin
     <div className="min-w-0 flex-1">
       <button type="button" onClick={onShowInTimeline} className={`block rounded-sm text-left font-semibold ${done ? 'text-kveld-500 line-through decoration-kveld-300' : 'text-kveld-900'}`}>{task.title}</button>
       <span className={`mt-0.5 block text-sm leading-6 ${done ? 'text-kveld-300' : 'text-kveld-500'}`}>{task.summary}</span>
-      <span className="mt-1.5 block text-xs font-medium text-kveld-500">{relativeLabel(task.offset, task.dateAnchor)}{date && ` · ${date}`}</span>
+      <span className="mt-1.5 block text-xs font-medium text-kveld-500">{taskTimingLabel(task)}{date && ` · ${date}`}</span>
     </div>
     <button type="button" onClick={onShowInTimeline} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-syrin-600 hover:bg-syrin-50" aria-label={`Vis «${task.title}» i tidslinjen`}><Icon name="timeline" /></button>
   </li>;
@@ -72,7 +73,7 @@ export function TaskDetail({ task }: { task: MovingTask }) {
     <article className="relative z-10 rounded-3xl bg-white p-5 shadow-[0_0_0_1px_var(--color-kveld-100),0_24px_60px_-34px_rgba(20,26,69,0.35)] sm:p-7">
       <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
         <span className={`rounded-full px-2.5 py-1 ${categoryStyle[task.category]}`}>{categoryName[task.category]}</span>
-        <span className="text-kveld-500">{relativeLabel(task.offset, task.dateAnchor)}{date && ` · ${date}`}</span>
+        <span className="text-kveld-500">{taskTimingLabel(task)}{date && ` · ${date}`}</span>
         {done && <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-ok-100 px-2.5 py-1 text-ok-500"><Icon name="check" className="h-3.5 w-3.5" />Gjennomført</span>}
       </div>
       <h2 className="mt-4 text-2xl font-semibold tracking-tight">{task.title}</h2>
@@ -90,7 +91,10 @@ export function TaskDetail({ task }: { task: MovingTask }) {
       <fieldset className="mt-5"><legend className="text-sm font-semibold">Oppgaver</legend><div className="mt-2 space-y-1">
         {task.checks.map((text, index) => {
           const key = task.checkKeys?.[index] ?? String(index);
-          return <label key={key} className="flex cursor-pointer items-start gap-3 rounded-lg py-2 text-sm leading-6 text-kveld-700"><input type="checkbox" className="check-input mt-1" checked={progress.checks[key] ?? false} onChange={(event) => change({ checks: { ...progress.checks, [key]: event.target.checked } })} /><span>{text}</span></label>;
+          return <div key={key} className="py-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg text-sm leading-6 text-kveld-700"><input type="checkbox" className="check-input mt-1" checked={progress.checks[key] ?? false} onChange={(event) => change({ checks: { ...progress.checks, [key]: event.target.checked } })} /><span>{text}</span></label>
+            {task.checkLinks?.[index] && <a className="button-secondary ml-7 mt-2" href={task.checkLinks[index].href}>{task.checkLinks[index].label}<Icon name="arrow" className="h-4 w-4" /></a>}
+          </div>;
         })}
       </div></fieldset>
       {task.doneWhen?.trim() && <p className="mt-3 rounded-2xl bg-kveld-50 p-3 text-sm leading-6 text-kveld-700"><strong className="font-semibold">Du er ferdig når:</strong> {task.doneWhen}</p>}

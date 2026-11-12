@@ -2,6 +2,24 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getPartnerOffers, hasPartnerOffers, type PartnerOfferSource } from './partner-offers.ts';
 
+test('address task offers Huseierne membership and discounts, not address reporting partners', async () => {
+  assert.equal(hasPartnerOffers('address'), true);
+  const offers = await getPartnerOffers('address', new AbortController().signal);
+  assert.equal(offers.length, 1);
+  const [offer] = offers;
+  assert.equal(offer.provider, 'Huseierne');
+  assert.match(offer.description, /rabatter og tilbud.*flytteprosess/);
+  assert.equal(offer.isDemo, false);
+  assert.equal(offer.price, undefined);
+  assert.match(offer.disclaimer, /Medlemskap koster penger/);
+  assert.deepEqual(offer.link, {
+    label: 'Bli medlem her', href: 'https://bli-medlem.huseierne.no/privat/bli-medlem',
+  });
+  assert.deepEqual(offer.secondaryLink, {
+    label: 'Sjekk rabatter', href: 'https://www.huseierne.no/medlemskap/medlemsfordeler/rabatter/',
+  });
+});
+
 test('insurance has Gjensidige branding, a sourced award, price and test checkout', async () => {
   assert.equal(hasPartnerOffers('insurance'), true);
   const offers = await getPartnerOffers('insurance', new AbortController().signal);

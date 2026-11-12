@@ -1,6 +1,29 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { demoState, emptyState, generatePlan, getProgress, parseStoredState, profileErrors, relativeLabel, suggestedDate, summarize, taskAnchorDate, taskTimelineDay, validDate } from './moving-plan.ts';
+import { demoState, emptyState, generatePlan, getProgress, parseStoredState, profileErrors, relativeLabel, suggestedDate, summarize, taskAnchorDate, taskDeadlineDates, taskTimingLabel, taskTimelineDay, validDate } from './moving-plan.ts';
+
+test('address reporting has a hard window anchored to moving, not handover', () => {
+  const profile = { ...demoState().profile, moveDate: '2028-03-01', handoverDate: '2028-02-01' };
+  const task = generatePlan(profile).find((task) => task.id === 'address')!;
+  assert.deepEqual(task.deadlineWindow, { earliest: -31, latest: 8 });
+  assert.equal(task.offset, -31);
+  assert.equal(taskTimelineDay(profile, task), -31);
+  assert.equal(task.dateAnchor, 'move');
+  assert.deepEqual(task.checkLinks, {
+    0: { label: 'Meld flytting hos Skatteetaten', href: 'https://www.skatteetaten.no/person/folkeregister/flytte/i-norge/' },
+    1: { label: 'Meld flytting hos Posten', href: 'https://www.posten.no/adressetjenester/adresseendring' },
+  });
+  assert.match(taskTimingLabel(task), /31 dager før–8 dager etter innflytting/);
+  assert.deepEqual(taskDeadlineDates(profile, task), {
+    earliest: suggestedDate('2028-01-30', 0),
+    latest: suggestedDate('2028-03-09', 0),
+  });
+  assert.equal(taskDeadlineDates({ ...profile, dateUnknown: true }, task), null);
+  assert.equal(taskDeadlineDates({ ...profile, moveDate: '' }, task), null);
+  const packing = generatePlan(profile).find((task) => task.id === 'packing')!;
+  assert.equal(taskDeadlineDates(profile, packing), null);
+  assert.equal(taskTimingLabel(packing), relativeLabel(packing.offset, packing.dateAnchor));
+});
 
 test('personalizes housing, household and life phase without duplicate tasks', () => {
   const state = demoState();
