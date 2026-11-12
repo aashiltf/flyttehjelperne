@@ -60,10 +60,12 @@ export type MovingTask = {
   why: string;
   phase: Phase;
   offset: number;
-  deadlineWindow?: { earliest: number; latest: number };
+  deadlineWindow?: { earliest: number; latest: number; subject?: string };
   dateAnchor: DateAnchor;
   checks: string[];
   checkKeys?: string[];
+  checkHeadings?: Record<number, string>;
+  checkDescriptions?: Record<number, string>;
   checkLinks?: Record<number, { label: string; href: string }>;
   doneWhen?: string;
   resources?: {
@@ -192,10 +194,15 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     doneWhen: 'Nødvendige tjenester er avklart, inkludert hvem som har ansvar for strøm fra overtakelsen og når internett skal være klart.',
   }, {
     id: 'address', title: 'Meld flytting og adresseendring', phase: 'before', offset: -31,
-    deadlineWindow: { earliest: -31, latest: 8 },
+    deadlineWindow: { earliest: -31, latest: 8, subject: 'Folkeregisteret' },
     summary: 'Når du skal flytte må du melde flytting til Folkeregisteret og Posten.',
     why: 'Sørg for at både Folkeregisteret og Posten får den nye adressen. Hos Posten kan du også samtykke til at flyttemeldingen sendes til Folkeregisteret.',
     checks: ['Jeg har meldt flytting til Folkeregisteret hos Skatteetaten', 'Jeg har meldt adresseendring hos Posten og avklart eventuell videresending'],
+    checkHeadings: { 0: 'Folkeregisteret', 1: 'Posten' },
+    checkDescriptions: {
+      0: 'Meld flytting tidligst 31 dager før og senest 8 dager etter innflytting. Dette er faste frister.',
+      1: 'Meld adresseendring på nett minst fire virkedager før flytting.',
+    },
     checkLinks: {
       0: { label: 'Meld flytting hos Skatteetaten', href: 'https://www.skatteetaten.no/person/folkeregister/flytte/i-norge/' },
       1: { label: 'Meld flytting hos Posten', href: 'https://www.posten.no/adressetjenester/adresseendring' },
@@ -294,7 +301,7 @@ export function relativeLabel(offset: number, anchor: DateAnchor = 'move'): stri
 
 export function taskTimingLabel(task: MovingTask): string {
   return task.deadlineWindow
-    ? `Frist: ${Math.abs(task.deadlineWindow.earliest)} dager før–${task.deadlineWindow.latest} dager etter innflytting`
+    ? `Frist${task.deadlineWindow.subject ? ` for ${task.deadlineWindow.subject}` : ''}: ${Math.abs(task.deadlineWindow.earliest)} dager før–${task.deadlineWindow.latest} dager etter innflytting`
     : relativeLabel(task.offset, task.dateAnchor);
 }
 

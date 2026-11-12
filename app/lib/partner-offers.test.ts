@@ -13,7 +13,7 @@ test('address task offers Huseierne membership and discounts, not address report
   assert.equal(offer.price, undefined);
   assert.match(offer.disclaimer, /Medlemskap koster penger/);
   assert.deepEqual(offer.link, {
-    label: 'Bli medlem her', href: 'https://bli-medlem.huseierne.no/privat/bli-medlem',
+    label: 'Bli medlem her', href: 'https://bli-medlem.huseierne.no/privat/bli-medlem', variant: 'subtle',
   });
   assert.deepEqual(offer.secondaryLink, {
     label: 'Sjekk rabatter', href: 'https://www.huseierne.no/medlemskap/medlemsfordeler/rabatter/',

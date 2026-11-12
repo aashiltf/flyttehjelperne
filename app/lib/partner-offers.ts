@@ -8,7 +8,7 @@ export type PartnerOffer = {
   award?: { label: string; source: string; href: string };
   isDemo: boolean;
   disclaimer: string;
-  link: { label: string; href: string };
+  link: { label: string; href: string; variant?: 'subtle' };
   secondaryLink?: { label: string; href: string };
 };
 
@@ -24,7 +24,7 @@ const offersByTask: Record<string, PartnerOffer[]> = {
     description: 'Huseierne har gode rabatter og tilbud som kan komme godt med i en flytteprosess. Som medlem får du tilgang til fordeler for deg og den nye boligen din.',
     isDemo: false,
     disclaimer: 'Medlemskap koster penger. Sjekk gjeldende medlemspris og vilkår for rabattene hos Huseierne.',
-    link: { label: 'Bli medlem her', href: 'https://bli-medlem.huseierne.no/privat/bli-medlem' },
+    link: { label: 'Bli medlem her', href: 'https://bli-medlem.huseierne.no/privat/bli-medlem', variant: 'subtle' },
     secondaryLink: { label: 'Sjekk rabatter', href: 'https://www.huseierne.no/medlemskap/medlemsfordeler/rabatter/' },
   }],
   insurance: [{

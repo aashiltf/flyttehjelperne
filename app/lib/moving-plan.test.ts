@@ -5,10 +5,14 @@ import { demoState, emptyState, generatePlan, getProgress, parseStoredState, pro
 test('address reporting has a hard window anchored to moving, not handover', () => {
   const profile = { ...demoState().profile, moveDate: '2028-03-01', handoverDate: '2028-02-01' };
   const task = generatePlan(profile).find((task) => task.id === 'address')!;
-  assert.deepEqual(task.deadlineWindow, { earliest: -31, latest: 8 });
+  assert.deepEqual(task.deadlineWindow, { earliest: -31, latest: 8, subject: 'Folkeregisteret' });
   assert.equal(task.offset, -31);
   assert.equal(taskTimelineDay(profile, task), -31);
   assert.equal(task.dateAnchor, 'move');
+  assert.deepEqual(task.checkHeadings, { 0: 'Folkeregisteret', 1: 'Posten' });
+  assert.match(task.checkDescriptions![0], /tidligst 31 dager før og senest 8 dager etter/);
+  assert.match(task.checkDescriptions![1], /minst fire virkedager før/);
+  assert.match(taskTimingLabel(task), /Frist for Folkeregisteret:/);
   assert.deepEqual(task.checkLinks, {
     0: { label: 'Meld flytting hos Skatteetaten', href: 'https://www.skatteetaten.no/person/folkeregister/flytte/i-norge/' },
     1: { label: 'Meld flytting hos Posten', href: 'https://www.posten.no/adressetjenester/adresseendring' },

@@ -28,7 +28,7 @@ export function PartnerOffers({ taskId }: { taskId: string }) {
           {offer.award && <a href={offer.award.href} className="mt-2 inline-block text-xs text-kveld-700 underline underline-offset-4">{offer.award.source}</a>}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
             {offer.price && <p><span className="text-3xl font-semibold tracking-tight">{new Intl.NumberFormat('nb-NO', { style: 'currency', currency: offer.price.currency, maximumFractionDigits: 2 }).format(offer.price.amount)}</span><span className="text-sm text-kveld-700"> / {offer.price.period === 'month' ? 'måned' : 'år'}</span></p>}
-             <a className="button-primary" href={offer.link.href}>{offer.link.label}<Icon name="arrow" className="h-4 w-4" /></a>
+             <a className={offer.link.variant === 'subtle' ? 'inline-flex items-center gap-2 rounded-sm py-2 text-sm font-medium text-kveld-700 underline underline-offset-4 hover:text-syrin-600' : 'button-primary'} href={offer.link.href}>{offer.link.label}<Icon name="arrow" className="h-4 w-4" /></a>
              {offer.secondaryLink && <a className="button-secondary" href={offer.secondaryLink.href}>{offer.secondaryLink.label}<Icon name="arrow" className="h-4 w-4" /></a>}
           </div>
           {offer.disclaimer && <p className="mt-3 text-xs leading-5 text-kveld-700">{offer.disclaimer}</p>}

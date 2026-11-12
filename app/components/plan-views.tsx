@@ -91,7 +91,9 @@ export function TaskDetail({ task }: { task: MovingTask }) {
       <fieldset className="mt-5"><legend className="text-sm font-semibold">Oppgaver</legend><div className="mt-2 space-y-1">
         {task.checks.map((text, index) => {
           const key = task.checkKeys?.[index] ?? String(index);
-          return <div key={key} className="py-2">
+          return <div key={key} className={task.checkHeadings?.[index] ? 'rounded-2xl bg-kveld-50 p-4 not-first:mt-4' : 'py-2'}>
+            {task.checkHeadings?.[index] && <h3 className="mb-3 text-base font-semibold text-kveld-900">{task.checkHeadings[index]}</h3>}
+            {task.checkDescriptions?.[index] && <p className="mb-3 text-sm leading-6 text-kveld-700">{task.checkDescriptions[index]}</p>}
             <label className="flex cursor-pointer items-start gap-3 rounded-lg text-sm leading-6 text-kveld-700"><input type="checkbox" className="check-input mt-1" checked={progress.checks[key] ?? false} onChange={(event) => change({ checks: { ...progress.checks, [key]: event.target.checked } })} /><span>{text}</span></label>
             {task.checkLinks?.[index] && <a className="button-secondary ml-7 mt-2" href={task.checkLinks[index].href}>{task.checkLinks[index].label}<Icon name="arrow" className="h-4 w-4" /></a>}
           </div>;
