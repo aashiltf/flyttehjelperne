@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import type { ReactNode } from 'react';
 import { useMoving } from './moving-provider';
 
-export function Icon({ name, className = '' }: { name: 'home' | 'arrow' | 'check' | 'pin' | 'users' | 'person' | 'calendar' | 'shield' | 'spark' | 'chevron' | 'clock' | 'list' | 'timeline' | 'close' | 'edit' | 'help' | 'plus'; className?: string }) {
+export function Icon({ name, className = '' }: { name: 'home' | 'arrow' | 'check' | 'pin' | 'users' | 'person' | 'calendar' | 'shield' | 'spark' | 'chevron' | 'clock' | 'list' | 'timeline' | 'close' | 'edit' | 'help' | 'plus' | 'key'; className?: string }) {
   const paths: Record<typeof name, ReactNode> = {
     home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" /><path d="M9 21v-7h6v7" /></>,
     arrow: <path d="M4 12h16m-6-6 6 6-6 6" />,
@@ -19,6 +19,7 @@ export function Icon({ name, className = '' }: { name: 'home' | 'arrow' | 'check
     timeline: <><path d="M3 12h18" /><circle cx="7" cy="12" r="2" /><circle cx="14" cy="12" r="2" /><path d="M7 6v4M14 14v4M19 8v8" /></>,
     close: <path d="M6 6l12 12M18 6 6 18" />,
     plus: <path d="M12 4v16M4 12h16" />,
+    key: <><circle cx="8" cy="8" r="5" /><path d="m12 12 9 9m-4-4 3-3m-6 0 3-3" /></>,
     edit: <path d="m15 5 4 4M4 20l5-1L20 8a3 3 0 0 0-4-4L5 15l-1 5Z" />,
     help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2M12 16h.01" /></>,
   };

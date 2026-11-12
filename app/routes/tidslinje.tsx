@@ -66,24 +66,25 @@ export default function Plan() {
     <p className="eyebrow">Din flytteplan</p>
     <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Din vei til et nytt hjem</h1>
 
-    <div className="mt-6 grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+    <div className="mt-6">
       <MoveSummary />
-      <div className="flex items-center gap-4 rounded-2xl bg-sol px-5 py-4">
-        <p className="text-3xl font-semibold tracking-tight">{stats.done}<span className="text-base font-normal text-kveld-500"> / {stats.total}</span></p>
-        <div><p className="text-sm font-semibold">oppgaver gjort</p><progress aria-label="Gjennomførte oppgaver" className="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full [&::-moz-progress-bar]:bg-syrin-500 [&::-webkit-progress-bar]:bg-white [&::-webkit-progress-value]:bg-syrin-500" value={stats.done} max={Math.max(stats.total, 1)} /></div>
-      </div>
     </div>
 
-    <div role="group" aria-label="Velg visning" className="mt-8 inline-flex rounded-full bg-kveld-50 p-1 shadow-[inset_0_0_0_1px_var(--color-kveld-100)]">
+    <div className="mt-6 flex items-center justify-between gap-2">
+    <div role="group" aria-label="Velg visning" className="inline-flex rounded-full bg-kveld-50 p-1 shadow-[inset_0_0_0_1px_var(--color-kveld-100)]">
       {([['tidslinje', 'Tidslinje', 'timeline'], ['oppgaver', 'Oppgaver', 'list']] as const).map(([id, label, icon]) => <button key={id} type="button" aria-pressed={view === id} onClick={() => setView(id)}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold transition ${view === id ? 'bg-white text-kveld-900 shadow-[0_2px_8px_-2px_rgba(20,26,69,0.2)]' : 'text-kveld-500 hover:text-kveld-900'}`}><Icon name={icon} className="h-4 w-4" />{label}</button>)}
+        className={`inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-xs font-semibold transition sm:px-5 sm:text-sm ${view === id ? 'bg-white text-kveld-900 shadow-[0_2px_8px_-2px_rgba(20,26,69,0.2)]' : 'text-kveld-500 hover:text-kveld-900'}`}><Icon name={icon} className="hidden h-4 w-4 sm:block" />{label}</button>)}
+    </div>
+    <div className="shrink-0 rounded-xl bg-sol px-3 py-2 text-kveld-900 sm:px-4">
+      <p className="text-xs font-semibold sm:text-sm">{stats.done} av {stats.total} fullført</p>
+      <progress aria-label="Gjennomførte oppgaver" className="mt-1 block h-1.5 w-full overflow-hidden rounded-full [&::-moz-progress-bar]:bg-syrin-600 [&::-webkit-progress-bar]:bg-white [&::-webkit-progress-value]:bg-syrin-600" value={stats.done} max={Math.max(stats.total, 1)} />
+    </div>
     </div>
 
     <div className="mt-6">
       {view === 'tidslinje' ? <>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-kveld-500">{verticalTimeline ? 'Oppgavene står til høyre for linjen. Trykk for å åpne en oppgave.' : 'Trykk på en sirkel for å se oppgavene for datoen.'}</p>
-          <button type="button" className="button-secondary shrink-0" aria-pressed={verticalTimeline} aria-controls="plan-timeline" onClick={() => setVerticalTimeline((shown) => !shown)}>
+        <div className="mb-4 flex justify-end">
+          <button type="button" className="button-secondary" aria-pressed={verticalTimeline} aria-controls="plan-timeline" onClick={() => setVerticalTimeline((shown) => !shown)}>
             <Icon name="timeline" className="h-4 w-4" />{verticalTimeline ? 'Vis kompakt tidslinje' : 'Vis oppgaver på tidslinjen'}
           </button>
         </div>

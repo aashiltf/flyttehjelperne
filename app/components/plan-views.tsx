@@ -67,7 +67,7 @@ export function TaskList({ tasks, onShowInTimeline }: { tasks: MovingTask[]; onS
 
 /* ---------- Oppgavekort med valgfrie partnertilbud ---------- */
 
-export function TaskDetail({ task }: { task: MovingTask }) {
+export function TaskDetail({ task, hideTiming = false }: { task: MovingTask; hideTiming?: boolean }) {
   const { state } = useMoving();
   const { progress, done, change } = useTaskProgress(task);
   const date = taskDate(state.profile, task);
@@ -76,7 +76,7 @@ export function TaskDetail({ task }: { task: MovingTask }) {
     <article className="relative z-10 rounded-3xl bg-white p-5 shadow-[0_0_0_1px_var(--color-kveld-100),0_24px_60px_-34px_rgba(20,26,69,0.35)] sm:p-7">
       <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
         <span className={`rounded-full px-2.5 py-1 ${categoryStyle[task.category]}`}>{categoryName[task.category]}</span>
-        <span className="text-kveld-500">{taskTimingLabel(task)}{date && ` · ${date}`}</span>
+        {!hideTiming && <span className="text-kveld-500">{taskTimingLabel(task)}{date && ` · ${date}`}</span>}
         {done && <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-ok-100 px-2.5 py-1 text-ok-500"><Icon name="check" className="h-3.5 w-3.5" />Gjennomført</span>}
       </div>
       <h2 className="mt-4 text-2xl font-semibold tracking-tight">{task.title}</h2>

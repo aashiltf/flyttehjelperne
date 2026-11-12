@@ -46,9 +46,9 @@ export function MoveSummary() {
     });
   }
 
-  return <section aria-label="Flytteopplysninger" className="min-w-0 rounded-2xl border border-syrin-200 bg-syrin-50 p-4 sm:p-5">
+  return <section aria-label="Flytteopplysninger" className="min-w-0 rounded-2xl border border-syrin-300 bg-syrin-100 px-4 pb-4 pt-2 sm:px-5 sm:pb-5">
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-sm font-semibold text-kveld-700">Flyttingen din</h2>
+      <h2 className="text-lg font-semibold text-kveld-900">Flyttingen din</h2>
       <button type="button" className="flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs font-semibold text-syrin-600 hover:bg-syrin-100" aria-expanded={expanded} aria-controls="move-summary-details" disabled={draft !== null} onClick={() => setExpanded(!expanded)}>{expanded ? 'Vis mindre' : 'Vis mer'}<Icon name="chevron" className={`h-4 w-4 ${expanded ? '-rotate-90' : 'rotate-90'}`} /></button>
     </div>
     <div className="mt-2 grid items-start gap-5 text-sm sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
@@ -71,17 +71,17 @@ export function MoveSummary() {
         <HouseholdFields profile={draft} patch={(changes) => setDraft((saved) => saved && { ...saved, ...changes })} />
         <div className="flex flex-wrap gap-3"><button type="submit" className="button-primary">Lagre endringer</button><button type="button" className="button-secondary" onClick={finishEditing}>Avbryt</button></div>
       </form> : <div className="mt-5 border-t border-syrin-200 pt-5">
-        <dl className="grid gap-4 text-sm sm:grid-cols-2">
-          <div><dt className="text-xs text-kveld-500">Boligen du flytter fra</dt><dd className="mt-1">{homeKindLabel(p.fromAddress, p.fromHomeKind)} · {tenureLabel[p.fromTenure]}</dd></div>
-          <div><dt className="text-xs text-kveld-500">Den nye boligen</dt><dd className="mt-1">{homeKindLabel(p.toAddress, p.toHomeKind)} · {tenureLabel[p.toTenure]}</dd></div>
-          <div><dt className="text-xs text-kveld-500">Hvem flytter?</dt><dd className="mt-1">{p.household === 'partner' ? 'Med ektefelle/samboer' : 'Alene'}</dd></div>
-          <div><dt className="text-xs text-kveld-500">Barn</dt><dd className="mt-1">{p.children ? p.schoolChange ? 'Med barn · bytter skole eller barnehage' : 'Med barn · bytter ikke skole eller barnehage' : 'Ingen barn med på flyttingen'}</dd></div>
+        <dl className="grid gap-x-5 gap-y-4 text-sm sm:grid-cols-[minmax(0,1fr)_1.25rem_minmax(0,1fr)]">
+          <div className="pl-[30px]"><dt className="text-xs text-kveld-500">Boligen du flytter fra</dt><dd className="mt-1">{homeKindLabel(p.fromAddress, p.fromHomeKind)} · {tenureLabel[p.fromTenure]}</dd></div>
+          <div className="pl-[30px] sm:col-start-3"><dt className="text-xs text-kveld-500">Den nye boligen</dt><dd className="mt-1">{homeKindLabel(p.toAddress, p.toHomeKind)} · {tenureLabel[p.toTenure]}</dd></div>
+          <div className="pl-[30px]"><dt className="text-xs text-kveld-500">Hvem flytter?</dt><dd className="mt-1">{p.household === 'partner' ? 'Med ektefelle/samboer' : 'Alene'}</dd></div>
+          <div className="pl-[30px] sm:col-start-3"><dt className="text-xs text-kveld-500">Barn</dt><dd className="mt-1">{p.children ? p.schoolChange ? 'Med barn · bytter skole eller barnehage' : 'Med barn · bytter ikke skole eller barnehage' : 'Ingen barn med på flyttingen'}</dd></div>
         </dl>
-        <button type="button" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-syrin-600 hover:bg-syrin-100" aria-expanded={extras} aria-controls="subscription-options" onClick={() => setExtras(!extras)}><Icon name={extras ? 'close' : 'plus'} className="h-4 w-4" />{extras ? 'Skjul ekstra' : 'Legg til ekstra'}</button>
-        <div id="subscription-options" hidden={!extras} className="mt-2 rounded-xl bg-white p-4">
+        <button type="button" className="ml-[30px] mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-syrin-600 hover:bg-syrin-200" aria-expanded={extras} aria-controls="subscription-options" onClick={() => setExtras(!extras)}><Icon name={extras ? 'close' : 'plus'} className="h-4 w-4" />{extras ? 'Skjul ekstra' : 'Legg til ekstra'}</button>
+        <div id="subscription-options" hidden={!extras} className="ml-[30px] mt-2 rounded-xl bg-white p-4">
           <fieldset><legend className="text-sm font-semibold">Abonnementer du må følge opp</legend><p className="mt-1 text-xs leading-5 text-kveld-500">Velg det du må si opp eller endre adresse på. Vi legger det til i abonnementsoppgaven.</p><div className="mt-3 flex flex-wrap gap-3">{subscriptionOptions.map((option) => <label key={option.id} className={`choice-small ${p.subscriptions.includes(option.id) ? 'choice-selected' : ''}`}><input className="check-input" type="checkbox" checked={p.subscriptions.includes(option.id)} onChange={(event) => toggleSubscription(option.id, event.target.checked)} />{option.label}</label>)}</div></fieldset>
         </div>
-        <button ref={editButton} type="button" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-syrin-600 underline underline-offset-4" onClick={() => { setDraft({ ...p }); setErrors([]); }}><Icon name="edit" className="h-4 w-4" />Endre</button>
+        <button ref={editButton} type="button" className="ml-[30px] mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-syrin-600 hover:bg-syrin-200" onClick={() => { setDraft({ ...p }); setErrors([]); }}><Icon name="edit" className="h-4 w-4" />Endre</button>
       </div>}
     </div>
   </section>;
