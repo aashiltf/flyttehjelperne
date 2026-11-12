@@ -22,7 +22,6 @@ export default function Plan() {
   const tasks = generatePlan(state.profile);
   const stats = summarize(tasks, state);
   const selected = params.get('oppgave');
-  const [verticalTimeline, setVerticalTimeline] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const resetDialog = useRef<HTMLDialogElement>(null);
 
@@ -55,7 +54,7 @@ export default function Plan() {
       const updated = new URLSearchParams(previous);
       if (updated.get('oppgave') === id) updated.delete('oppgave');
       else updated.set('oppgave', id);
-      updated.delete('visning');
+      updated.set('visning', 'tidslinje');
       return updated;
     }, { preventScrollReset: true });
   }
@@ -63,8 +62,7 @@ export default function Plan() {
   if (ready && !state.created) return <Shell><main className="mx-auto max-w-xl px-5 py-16 text-center"><HouseIllustration /><h1 className="text-3xl font-semibold tracking-tight">Flytteplanen din starter her</h1><p className="mt-3 text-kveld-500">Fortell oss hvor, når og med hvem du flytter, så lager vi en plan som passer deg.</p><Link className="button-primary mt-6" to="/">Lag min flytteplan<Icon name="arrow" /></Link></main></Shell>;
 
   return <Shell><main className="mx-auto max-w-5xl px-5 pb-8 pt-8 sm:px-8 sm:pt-12">
-    <p className="eyebrow">Din flytteplan</p>
-    <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Din vei til et nytt hjem</h1>
+    <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Din vei til et nytt hjem</h1>
 
     <div className="mt-6">
       <MoveSummary />
@@ -82,14 +80,7 @@ export default function Plan() {
     </div>
 
     <div className="mt-6">
-      {view === 'tidslinje' ? <>
-        <div className="mb-4 flex justify-end">
-          <button type="button" className="button-secondary" aria-pressed={verticalTimeline} aria-controls="plan-timeline" onClick={() => setVerticalTimeline((shown) => !shown)}>
-            <Icon name="timeline" className="h-4 w-4" />{verticalTimeline ? 'Vis kompakt tidslinje' : 'Vis oppgaver på tidslinjen'}
-          </button>
-        </div>
-        <div id="plan-timeline"><TimelineView tasks={tasks} selected={selected} onSelect={select} vertical={verticalTimeline} /></div>
-      </> : <TaskList tasks={tasks} onShowInTimeline={(id) => { setVerticalTimeline(false); select(id); }} />}
+      {view === 'tidslinje' ? <TimelineView tasks={tasks} selected={selected} onSelect={select} /> : <TaskList tasks={tasks} onShowInTimeline={select} />}
     </div>
 
     <p className="mt-10 text-xs leading-6 text-kveld-500">Tidspunktene er anbefalinger, ikke bindende frister. Sjekk avtaler og gjeldende regler hos den aktuelle tjenesten.</p>

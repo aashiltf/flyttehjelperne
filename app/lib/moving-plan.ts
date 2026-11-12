@@ -11,7 +11,7 @@ export type Subscription = typeof subscriptionOptions[number]['id'];
 export type TaskStatus = 'todo' | 'waiting' | 'done' | 'irrelevant';
 export type Phase = 'now' | 'before' | 'moving' | 'after';
 export type Category = 'formal' | 'insurance' | 'practical' | 'other';
-export type DateAnchor = 'move' | 'handover';
+export type DateAnchor = 'move' | 'handover' | 'move-out';
 
 export const categories: { id: Category; title: string; description: string }[] = [
   { id: 'formal', title: 'Formelle', description: 'Søknader og avtaler med det offentlige' },
@@ -83,7 +83,7 @@ type DraftTask = Omit<MovingTask, 'category' | 'dateAnchor'> & { dateAnchor?: Da
 
 const categoryById: Record<string, Category> = {
   'end-lease': 'formal', school: 'formal', address: 'formal', student: 'formal', 'new-parent': 'formal',
-  'old-home': 'practical', packing: 'practical', 'prepare-handover': 'practical', 'move-in': 'practical',
+  'old-home': 'practical', packing: 'practical', 'prepare-handover': 'practical', 'move-in': 'practical', 'move-out': 'practical', handover: 'practical',
   insurance: 'insurance', 'life-insurance': 'insurance',
   'shared-home': 'other', utilities: 'other', subscriptions: 'other', settle: 'other', neighborhood: 'other',
 };
@@ -144,6 +144,18 @@ export function isProfileComplete(profile: MovingProfile): boolean {
 
 export function generatePlan(p: MovingProfile): MovingTask[] {
   const tasks: DraftTask[] = [];
+  tasks.push({
+    id: 'move-out', title: 'Lever fra deg boligen', phase: 'moving', offset: 0, dateAnchor: 'move-out',
+    summary: 'Gjør boligen klar og avklar overleveringen med utleier eller ny eier.',
+    why: 'Utflyttingsdagen er dagen du leverer fra deg den gamle boligen.',
+    checks: ['Jeg har tømt og vasket boligen som avtalt', 'Jeg har dokumentert tilstanden og eventuell målerstand', 'Jeg har levert nøkler og adgangsbrikker', 'Jeg har bekreftet overleveringen med utleier eller ny eier'],
+  });
+  if (p.fromTenure !== 'own') tasks.push({
+    id: 'handover', title: 'Gå gjennom og overta boligen', phase: 'moving', offset: 0, dateAnchor: 'handover',
+    summary: 'Gå gjennom boligen, dokumenter tilstanden og avklar nøkkeloverleveringen.',
+    why: 'Dokumentasjon ved overtakelsen gjør det lettere å følge opp feil og mangler.',
+    checks: ['Jeg har gått gjennom boligen og dokumentert tilstanden', 'Jeg har avklart nøkler, eventuell målerstand og overtakelsesdokumenter'],
+  });
   if (p.fromTenure === 'rent') tasks.push({
     id: 'end-lease', title: 'Avklar oppsigelse av leieboligen', phase: 'now', offset: -60,
     summary: 'Finn oppsigelsesfristen og avtal veien videre med utleier.',
@@ -152,7 +164,7 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     doneWhen: 'Oppsigelsen og tilbakeleveringen er avklart med utleier.',
   });
   if (p.fromTenure === 'own') tasks.push({
-    id: 'old-home', title: 'Gjennomgang ved overtakelse', phase: 'now', offset: -45,
+    id: 'old-home', title: 'Gjennomgang ved overtakelse', phase: 'moving', offset: 0, dateAnchor: 'handover',
     summary: 'Gå gjennom den nye boligen sammen med selger eller utleier, og dokumenter tilstanden ved overtakelsen.',
     why: 'En grundig gjennomgang gjør det lettere å oppdage og dokumentere avvik, og avklare hvem som skal følge dem opp.',
     checks: [
@@ -307,8 +319,8 @@ export function suggestedDate(moveDate: string, offset: number): string {
 }
 
 export function relativeLabel(offset: number, anchor: DateAnchor = 'move'): string {
-  const event = anchor === 'handover' ? 'overtakelse' : 'innflytting';
-  if (offset === 0) return anchor === 'handover' ? 'På overtakelsesdagen' : 'På innflyttingsdagen';
+  const event = anchor === 'handover' ? 'overtakelse' : anchor === 'move-out' ? 'utflytting' : 'innflytting';
+  if (offset === 0) return anchor === 'handover' ? 'På overtakelsesdagen' : anchor === 'move-out' ? 'På utflyttingsdagen' : 'På innflyttingsdagen';
   const days = Math.abs(offset);
   const amount = days >= 14 && days % 7 === 0 ? `${days / 7} uker` : days === 7 ? '1 uke' : `${days} dager`;
   return `${amount} ${offset < 0 ? 'før' : 'etter'} ${event}`;
@@ -332,6 +344,7 @@ export function taskDeadlineDates(profile: MovingProfile, task: MovingTask): { e
 
 /** Ukjente datoer beholdes relative til sin egen milepæl, aldri den andre datoen. */
 export function taskAnchorDate(profile: MovingProfile, task: MovingTask): string {
+  if (task.dateAnchor === 'move-out') return validDate(profile.moveOutDate) ? profile.moveOutDate : '';
   return task.dateAnchor === 'handover'
     ? (validDate(profile.handoverDate) ? profile.handoverDate : '')
     : (hasMoveDate(profile) ? profile.moveDate : '');
@@ -339,6 +352,7 @@ export function taskAnchorDate(profile: MovingProfile, task: MovingTask): string
 
 /** Felles tidsakse når begge datoer er kjent, ellers en skjematisk plassering. */
 export function taskTimelineDay(profile: MovingProfile, task: MovingTask): number {
+  if (task.dateAnchor === 'move-out') return hasMoveDate(profile) && validDate(profile.moveOutDate) ? daysBetween(profile.moveDate, profile.moveOutDate) + task.offset : task.offset;
   const shift = task.dateAnchor === 'handover' && hasMoveDate(profile) && validDate(profile.handoverDate)
     ? daysBetween(profile.moveDate, profile.handoverDate) : 0;
   return shift + task.offset;
