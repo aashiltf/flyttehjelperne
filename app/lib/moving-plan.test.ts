@@ -12,7 +12,7 @@ test('address reporting has a hard window anchored to moving, not handover', () 
   assert.deepEqual(task.checkHeadings, { 0: 'Folkeregisteret', 1: 'Posten' });
   assert.match(task.checkDescriptions![0], /tidligst 31 dager før og senest 8 dager etter/);
   assert.match(task.checkDescriptions![1], /minst fire virkedager før/);
-  assert.match(taskTimingLabel(task), /Frist for Folkeregisteret:/);
+  assert.match(taskTimingLabel(task), /^Frist: .*\(Folkeregisteret\)$/);
   assert.deepEqual(task.checkLinks, {
     0: { label: 'Meld flytting hos Skatteetaten', href: 'https://www.skatteetaten.no/person/folkeregister/flytte/i-norge/' },
     1: { label: 'Meld flytting hos Posten', href: 'https://www.posten.no/adressetjenester/adresseendring' },
@@ -26,7 +26,18 @@ test('address reporting has a hard window anchored to moving, not handover', () 
   assert.equal(taskDeadlineDates({ ...profile, moveDate: '' }, task), null);
   const packing = generatePlan(profile).find((task) => task.id === 'packing')!;
   assert.equal(taskDeadlineDates(profile, packing), null);
-  assert.equal(taskTimingLabel(packing), relativeLabel(packing.offset, packing.dateAnchor));
+  assert.equal(taskTimingLabel(packing), `Frist: ${relativeLabel(packing.offset, packing.dateAnchor)}`);
+});
+
+test('every task timing label starts with a single deadline prefix', () => {
+  const profile = { ...demoState().profile, children: true, schoolChange: true, student: true, newParent: true, retired: true };
+  for (const fromTenure of ['rent', 'own', 'other'] as const) {
+    for (const task of generatePlan({ ...profile, fromTenure })) {
+      const label = taskTimingLabel(task);
+      assert.ok(label.startsWith('Frist: '), task.id);
+      assert.equal(label.match(/Frist/g)?.length, 1, task.id);
+    }
+  }
 });
 
 test('personalizes housing, household and life phase without duplicate tasks', () => {
@@ -50,7 +61,7 @@ test('school task includes official municipal information and NAV guidance', () 
   const tasks = generatePlan(profile);
   const school = tasks.find((task) => task.id === 'school');
   assert.ok(school?.resources);
-  assert.equal(taskTimingLabel(school), 'Frist 45 dager før innflytting');
+  assert.equal(taskTimingLabel(school), 'Frist: 45 dager før innflytting');
   assert.equal(school.offset, -45);
   assert.equal(school.dateAnchor, 'move');
   assert.match(school.resources.description, /eksempler fra Oslo/);

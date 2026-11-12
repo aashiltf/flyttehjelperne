@@ -179,11 +179,10 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
   });
   if (p.children && p.schoolChange) tasks.push({
     id: 'school', title: 'Undersøk skole og barnehage', phase: 'now', offset: -45,
-    timingLabel: 'Frist 45 dager før innflytting',
+    timingLabel: '45 dager før innflytting',
     summary: 'Finn riktig kontaktpunkt i kommunen dere flytter til.',
     why: 'Du har oppgitt at barn skal bytte skole eller barnehage. Søknadsprosess og frister må avklares med kommunen.',
     checks: ['Jeg har undersøkt kommunens informasjon om skole eller barnehage', 'Jeg har avklart søknad, dokumentasjon og aktuelle frister'],
-    doneWhen: 'Du har avklart videre prosess og fulgt opp eventuell søknad hos kommunen.',
     resources: {
       description: 'Søk om skole- og barnehageplass hos kommunen dere flytter til, ikke hos NAV. Kommunelenkene under er eksempler fra Oslo. Flytter dere til en annen kommune, finner dere tilsvarende informasjon på kommunens nettsider.',
       links: [
@@ -316,10 +315,10 @@ export function relativeLabel(offset: number, anchor: DateAnchor = 'move'): stri
 }
 
 export function taskTimingLabel(task: MovingTask): string {
-  if (task.timingLabel) return task.timingLabel;
+  if (task.timingLabel) return `Frist: ${task.timingLabel}`;
   return task.deadlineWindow
-    ? `Frist${task.deadlineWindow.subject ? ` for ${task.deadlineWindow.subject}` : ''}: ${Math.abs(task.deadlineWindow.earliest)} dager før–${task.deadlineWindow.latest} dager etter innflytting`
-    : relativeLabel(task.offset, task.dateAnchor);
+    ? `Frist: ${Math.abs(task.deadlineWindow.earliest)} dager før–${task.deadlineWindow.latest} dager etter innflytting${task.deadlineWindow.subject ? ` (${task.deadlineWindow.subject})` : ''}`
+    : `Frist: ${relativeLabel(task.offset, task.dateAnchor)}`;
 }
 
 export function taskDeadlineDates(profile: MovingProfile, task: MovingTask): { earliest: string; latest: string } | null {
