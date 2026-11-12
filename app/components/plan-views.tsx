@@ -187,7 +187,6 @@ export function TaskDetail({ task }: { task: MovingTask }) {
       </div>
       <h2 className="mt-4 text-2xl font-semibold tracking-tight">{task.title}</h2>
       <p className="mt-2 text-base leading-7 text-kveld-500">{task.summary}</p>
-      <p className="mt-5 text-sm leading-6 text-kveld-700"><strong className="font-semibold">Derfor er dette med: </strong>{task.why}</p>
       {task.resources && <section aria-label="Nyttige lenker" className="mt-5 rounded-2xl bg-syrin-50 p-4">
         <h3 className="text-sm font-semibold">Nyttige lenker</h3>
         <p className="mt-2 text-sm leading-6 text-kveld-700">{task.resources.description}</p>

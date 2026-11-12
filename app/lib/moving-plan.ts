@@ -179,7 +179,7 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     id: 'insurance', title: 'Sjekk forsikringene før overtakelsen', phase: 'before', offset: -21, dateAnchor: 'handover',
     summary: p.household === 'partner' ? 'Unngå dobbeltforsikring når dere flytter sammen.' : 'Sjekk eksisterende dekning før du kjøper noe nytt.',
     why: p.household === 'partner' ? 'Dere skal bo sammen. Avklar med forsikringsselskapet om en eksisterende innboforsikring kan dekke dere begge på ny adresse.' : 'Ny adresse og bolig kan påvirke forsikringen din. Start med å undersøke avtalen du allerede har.',
-    checks: ['Jeg har sjekket eksisterende innboforsikring og hvem som er dekket', ...(p.toTenure === 'own' ? ['Jeg har avklart om bygningsforsikring er felles eller må ordnes separat'] : []), 'Jeg har avklart dekning, adresse og flyttedato med forsikringsselskapet', 'Jeg har avklart hvilken dekning jeg trenger fra overtakelsen og frem til innflytting'],
+    checks: ['Jeg har sjekket eksisterende innboforsikring og hvem som er dekket', 'Jeg har avklart dekning, adresse og flyttedato med forsikringsselskapet', 'Jeg har avklart hvilken dekning jeg trenger fra overtakelsen og frem til innflytting'],
     doneWhen: 'Du vet hvilke forsikringer som gjelder, hvem de dekker og fra hvilken dato. Dekning fra overtakelse og under flyttingen er avklart.',
     question: { text: 'Har du eller en du flytter med innboforsikring i dag?', options: ['Ja', 'Nei', 'Vet ikke ennå'] },
     partner: true,
