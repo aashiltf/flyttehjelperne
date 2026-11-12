@@ -98,6 +98,14 @@ test('handover walkthrough has ten checks for the new home without reusing old c
   state.profile.fromTenure = 'own';
   const task = generatePlan(state.profile).find((task) => task.id === 'old-home')!;
   assert.equal(task.title, 'Gjennomgang ved overtakelse');
+  assert.equal(task.phase, 'moving');
+  assert.equal(task.offset, 0);
+  assert.equal(task.dateAnchor, 'handover');
+  assert.equal(taskTimingLabel(task), 'Frist: På overtakelsesdagen');
+  const profile = { ...state.profile, handoverDate: '2026-12-01', moveDate: '2026-12-15' };
+  assert.equal(taskAnchorDate(profile, task), '2026-12-01');
+  assert.equal(taskTimelineDay(profile, task), -14);
+  assert.equal(taskAnchorDate({ ...profile, handoverDate: '' }, task), '');
   assert.equal(task.checks.length, 10);
   assert.match(task.summary, /den nye boligen/);
   assert.match(task.checks[9], /overtakelsesprotokollen/);
