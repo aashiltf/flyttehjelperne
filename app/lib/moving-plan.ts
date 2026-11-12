@@ -52,6 +52,10 @@ export type MovingTask = {
   dateAnchor: DateAnchor;
   checks: string[];
   doneWhen: string;
+  resources?: {
+    description: string;
+    links: { title: string; href: string; description: string }[];
+  };
   question?: { text: string; options: string[] };
   partner?: boolean;
   category: Category;
@@ -162,6 +166,14 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     why: 'Du har oppgitt at barn skal bytte skole eller barnehage. Søknadsprosess og frister må avklares med kommunen.',
     checks: ['Jeg har undersøkt kommunens informasjon om skole eller barnehage', 'Jeg har avklart søknad, dokumentasjon og aktuelle frister'],
     doneWhen: 'Du har avklart videre prosess og fulgt opp eventuell søknad hos kommunen.',
+    resources: {
+      description: 'Søk om skole- og barnehageplass hos kommunen dere flytter til, ikke hos NAV. Kommunelenkene under er eksempler fra Oslo. Flytter dere til en annen kommune, finner dere tilsvarende informasjon på kommunens nettsider.',
+      links: [
+        { title: 'Oslo kommune: skole og utdanning', href: 'https://www.oslo.kommune.no/skole-og-utdanning/', description: 'Finn informasjon om skolekrets, skolestart, skolebytte og aktivitetsskolen (AKS/SFO).' },
+        { title: 'Oslo kommune: barnehage', href: 'https://www.oslo.kommune.no/barnehage/', description: 'Les om søknad, bytte av barnehage, frister og redusert foreldrebetaling.' },
+        { title: 'NAV: stønad til barnetilsyn for enslig mor eller far', href: 'https://www.nav.no/barnetilsyn-enslig', description: 'Kan være aktuelt for deg som er alene med barn. Sjekk gjeldende vilkår for støtte til barnepass hos NAV.' },
+      ],
+    },
   });
   tasks.push({
     id: 'insurance', title: 'Sjekk forsikringene før overtakelsen', phase: 'before', offset: -21, dateAnchor: 'handover',

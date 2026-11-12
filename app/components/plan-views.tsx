@@ -188,6 +188,16 @@ export function TaskDetail({ task }: { task: MovingTask }) {
       <h2 className="mt-4 text-2xl font-semibold tracking-tight">{task.title}</h2>
       <p className="mt-2 text-base leading-7 text-kveld-500">{task.summary}</p>
       <p className="mt-5 text-sm leading-6 text-kveld-700"><strong className="font-semibold">Derfor er dette med: </strong>{task.why}</p>
+      {task.resources && <section aria-label="Nyttige lenker" className="mt-5 rounded-2xl bg-syrin-50 p-4">
+        <h3 className="text-sm font-semibold">Nyttige lenker</h3>
+        <p className="mt-2 text-sm leading-6 text-kveld-700">{task.resources.description}</p>
+        <ul className="mt-3 space-y-3">
+          {task.resources.links.map((link) => <li key={link.href}>
+            <a href={link.href} className="rounded-sm text-sm font-semibold text-syrin-600 underline underline-offset-4">{link.title}</a>
+            <p className="mt-1 text-sm leading-6 text-kveld-700">{link.description}</p>
+          </li>)}
+        </ul>
+      </section>}
       <fieldset className="mt-5"><legend className="text-sm font-semibold">Dette kan du gjøre</legend><div className="mt-2 space-y-1">
         {task.checks.map((text, index) => <label key={text} className="flex cursor-pointer items-start gap-3 rounded-lg py-2 text-sm leading-6 text-kveld-700"><input type="checkbox" className="check-input mt-1" checked={progress.checks[String(index)] ?? false} onChange={(event) => change({ checks: { ...progress.checks, [index]: event.target.checked } })} /><span>{text}</span></label>)}
       </div></fieldset>

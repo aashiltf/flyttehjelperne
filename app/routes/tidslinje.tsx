@@ -21,6 +21,7 @@ export default function Plan() {
   const stats = summarize(tasks, state);
   const next = tasks.find((task) => getProgress(state, task.id).status !== 'done');
   const [selected, setSelected] = useState<string | null>(null);
+  const [showTimeline, setShowTimeline] = useState(true);
   const current = tasks.find((task) => task.id === selected) ?? next ?? tasks[0];
   const detail = useRef<HTMLDivElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -66,10 +67,15 @@ export default function Plan() {
 
     <div className="mt-6">
       {view === 'tidslinje' ? <>
-        <p className="mb-4 text-sm text-kveld-500">Trykk på en oppgave for å se hva du skal gjøre.<span className="sm:hidden"> Sveip sidelengs for å se hele tidslinjen.</span></p>
-        <TimelineView tasks={tasks} selected={current?.id ?? null} onSelect={select} />
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-kveld-500">{showTimeline ? <>Trykk på en oppgave for å se hva du skal gjøre.<span className="sm:hidden"> Sveip sidelengs for å se hele tidslinjen.</span></> : 'Tidslinjen er skjult. Vis den igjen for å velge en annen oppgave.'}</p>
+          <button type="button" className="button-secondary shrink-0" aria-expanded={showTimeline} aria-controls="plan-timeline" onClick={() => setShowTimeline((shown) => !shown)}>
+            <Icon name="timeline" className="h-4 w-4" />{showTimeline ? 'Skjul tidslinje' : 'Vis tidslinje'}
+          </button>
+        </div>
+        <div id="plan-timeline" hidden={!showTimeline}><TimelineView tasks={tasks} selected={current?.id ?? null} onSelect={select} /></div>
         <div ref={detail} className="mx-auto mt-6 max-w-2xl scroll-mt-6">{current && <TaskDetail task={current} />}</div>
-      </> : <TaskList tasks={tasks} onShowInTimeline={(id) => { setView('tidslinje'); select(id); }} />}
+      </> : <TaskList tasks={tasks} onShowInTimeline={(id) => { setShowTimeline(true); setView('tidslinje'); select(id); }} />}
     </div>
 
     <p className="mt-10 text-xs leading-6 text-kveld-500">Tidspunktene er anbefalinger, ikke bindende frister. Sjekk avtaler og gjeldende regler hos den aktuelle tjenesten.</p>

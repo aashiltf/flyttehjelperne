@@ -18,6 +18,24 @@ test('personalizes housing, household and life phase without duplicate tasks', (
   assert.ok(!generatePlan({ ...profile, children: false }).some((task) => task.id === 'school'));
 });
 
+test('school task includes official municipal information and NAV guidance', () => {
+  const profile = { ...demoState().profile, children: true, schoolChange: true };
+  const tasks = generatePlan(profile);
+  const school = tasks.find((task) => task.id === 'school');
+  assert.ok(school?.resources);
+  assert.match(school.resources.description, /eksempler fra Oslo/);
+  assert.deepEqual(school.resources.links.map((link) => link.href), [
+    'https://www.oslo.kommune.no/skole-og-utdanning/',
+    'https://www.oslo.kommune.no/barnehage/',
+    'https://www.nav.no/barnetilsyn-enslig',
+  ]);
+  for (const link of school.resources.links) {
+    assert.ok(link.title);
+    assert.ok(link.description);
+  }
+  assert.ok(tasks.filter((task) => task.id !== 'school').every((task) => !task.resources));
+});
+
 test('progress excludes irrelevant tasks and waiting is not completion', () => {
   const state = demoState();
   state.progress.insurance = { status: 'done', checks: {}, answer: '' };
