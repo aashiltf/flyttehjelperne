@@ -51,7 +51,7 @@ export type MovingTask = {
   offset: number;
   dateAnchor: DateAnchor;
   checks: string[];
-  doneWhen: string;
+  doneWhen?: string;
   resources?: {
     description: string;
     links: { title: string; href: string; description: string }[];
@@ -59,30 +59,15 @@ export type MovingTask = {
   question?: { text: string; options: string[] };
   partner?: boolean;
   category: Category;
-  product: { name: string; text: string };
 };
 
-type DraftTask = Omit<MovingTask, 'category' | 'product' | 'dateAnchor'> & { dateAnchor?: DateAnchor };
+type DraftTask = Omit<MovingTask, 'category' | 'dateAnchor'> & { dateAnchor?: DateAnchor };
 
 const categoryById: Record<string, Category> = {
   'end-lease': 'formal', school: 'formal', address: 'formal', student: 'formal', 'new-parent': 'formal',
   'old-home': 'practical', packing: 'practical', handover: 'practical', 'prepare-handover': 'practical', 'move-in': 'practical',
   'shared-home': 'other', insurance: 'other', utilities: 'other', subscriptions: 'other', settle: 'other', neighborhood: 'other',
 };
-
-function productFor(id: string, p: MovingProfile): MovingTask['product'] {
-  switch (id) {
-    case 'insurance': return { name: 'Innboforsikring', text: p.household === 'partner' ? 'Én innboforsikring kan dekke hele husstanden. Sjekk at begge står på avtalen.' : 'Innboforsikringen følger deg til ny adresse. Sjekk at boligstørrelse og dekning stemmer.' };
-    case 'handover': return p.toTenure === 'own' ? { name: 'Husforsikring', text: 'Eier du boligen, må huset være forsikret fra overtakelsesdagen.' } : { name: 'Innboforsikring', text: 'Ta bilder av tingene dine når du pakker ut. Det gjør et eventuelt skadeoppgjør enklere.' };
-    case 'old-home': return { name: 'Husforsikring', text: 'Avslutt eller overfør husforsikringen når den nye eieren overtar.' };
-    case 'shared-home': return { name: 'Samle forsikringene', text: 'Flytter dere sammen, kan dere ofte samle forsikringene og unngå å betale dobbelt.' };
-    case 'address': return { name: 'Oppdater adressen hos Gjensidige', text: 'Bil, innbo og reise henger sammen med adressen din. Endre den på Min side.' };
-    case 'packing': return { name: 'Verdisakforsikring', text: 'Smykker, kamera og andre verdisaker kan trenge ekstra dekning, også under flyttingen.' };
-    case 'school': return { name: 'Barneforsikring', text: 'Nytt nabolag og nye aktiviteter. Sjekk at barna er godt dekket.' };
-    case 'settle': return { name: 'Gjensidige-appen', text: 'Se alle forsikringene dine samlet og meld skade direkte fra telefonen.' };
-    default: return { name: 'Flytter du?', text: 'Vi hjelper deg å sjekke at forsikringene dine følger med til ny adresse.' };
-  }
-}
 
 export const phases: { id: Phase; title: string; description: string }[] = [
   { id: 'now', title: 'Kom i gang', description: 'De første avklaringene' },
@@ -176,11 +161,10 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     },
   });
   tasks.push({
-    id: 'insurance', title: 'Sjekk forsikringene før overtakelsen', phase: 'before', offset: -21, dateAnchor: 'handover',
-    summary: p.household === 'partner' ? 'Unngå dobbeltforsikring når dere flytter sammen.' : 'Sjekk eksisterende dekning før du kjøper noe nytt.',
+    id: 'insurance', title: 'Kjøp boligforsikringer', phase: 'before', offset: -21, dateAnchor: 'handover',
+    summary: 'Når du skal flytte til en enebolig, trenger du både husforsikring og innboforsikring. Forsikringene må være kjøpt innen overtagelsesdatoen.',
     why: p.household === 'partner' ? 'Dere skal bo sammen. Avklar med forsikringsselskapet om en eksisterende innboforsikring kan dekke dere begge på ny adresse.' : 'Ny adresse og bolig kan påvirke forsikringen din. Start med å undersøke avtalen du allerede har.',
-    checks: ['Jeg har sjekket eksisterende innboforsikring og hvem som er dekket', 'Jeg har avklart dekning, adresse og flyttedato med forsikringsselskapet', 'Jeg har avklart hvilken dekning jeg trenger fra overtakelsen og frem til innflytting'],
-    doneWhen: 'Du vet hvilke forsikringer som gjelder, hvem de dekker og fra hvilken dato. Dekning fra overtakelse og under flyttingen er avklart.',
+    checks: ['Jeg har kjøpt husforsikringen til den nye boligen', 'Jeg har kjøpt innboforsikring til den nye boligen'],
     question: { text: 'Har du eller en du flytter med innboforsikring i dag?', options: ['Ja', 'Nei', 'Vet ikke ennå'] },
     partner: true,
   });
@@ -256,17 +240,20 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     doneWhen: 'Du har funnet ut om det er noen lokale tilbud du vil utforske videre.',
   });
   return phases.flatMap((phase) => tasks.filter((task) => task.phase === phase.id))
-    .map((task) => ({ ...task, dateAnchor: task.dateAnchor ?? 'move', category: categoryById[task.id] ?? 'other', product: productFor(task.id, p) }));
+    .map((task) => ({ ...task, dateAnchor: task.dateAnchor ?? 'move', category: categoryById[task.id] ?? 'other' }));
 }
 
-export function getProgress(state: MovingState, id: string): TaskProgress {
-  return state.progress[id] ?? { status: 'todo', checks: {}, answer: '' };
+export function getProgress(state: MovingState, task: MovingTask): TaskProgress {
+  const progress = state.progress[task.id] ?? { status: 'todo', checks: {}, answer: '' };
+  if (progress.status === 'irrelevant') return progress;
+  const done = task.checks.length > 0 && task.checks.every((_, index) => progress.checks[String(index)] === true);
+  return { ...progress, status: done ? 'done' : progress.status === 'waiting' ? 'waiting' : 'todo' };
 }
 
 export function summarize(tasks: MovingTask[], state: MovingState) {
-  const relevant = tasks.filter((task) => getProgress(state, task.id).status !== 'irrelevant');
-  const done = relevant.filter((task) => getProgress(state, task.id).status === 'done').length;
-  const waiting = relevant.filter((task) => getProgress(state, task.id).status === 'waiting').length;
+  const relevant = tasks.filter((task) => getProgress(state, task).status !== 'irrelevant');
+  const done = relevant.filter((task) => getProgress(state, task).status === 'done').length;
+  const waiting = relevant.filter((task) => getProgress(state, task).status === 'waiting').length;
   return { total: relevant.length, done, waiting, remaining: relevant.length - done, percent: relevant.length ? Math.round(done / relevant.length * 100) : 0 };
 }
 

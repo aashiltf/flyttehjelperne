@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { demoState, emptyState, generatePlan, parseStoredState, profileErrors, relativeLabel, suggestedDate, summarize, taskAnchorDate, taskTimelineDay, validDate } from './moving-plan.ts';
+import { demoState, emptyState, generatePlan, getProgress, parseStoredState, profileErrors, relativeLabel, suggestedDate, summarize, taskAnchorDate, taskTimelineDay, validDate } from './moving-plan.ts';
 
 test('personalizes housing, household and life phase without duplicate tasks', () => {
   const state = demoState();
@@ -38,7 +38,7 @@ test('school task includes official municipal information and NAV guidance', () 
 
 test('progress excludes irrelevant tasks and waiting is not completion', () => {
   const state = demoState();
-  state.progress.insurance = { status: 'done', checks: {}, answer: '' };
+  state.progress.insurance = { status: 'todo', checks: { '0': true, '1': true }, answer: '' };
   state.progress.address = { status: 'waiting', checks: {}, answer: '' };
   state.progress.packing = { status: 'irrelevant', checks: {}, answer: '' };
   const tasks = generatePlan(state.profile);
@@ -49,6 +49,26 @@ test('progress excludes irrelevant tasks and waiting is not completion', () => {
   assert.equal(stats.remaining, stats.total - 1);
   for (const task of tasks) state.progress[task.id] = { status: 'irrelevant', checks: {}, answer: '' };
   assert.equal(summarize(tasks, state).percent, 0);
+});
+
+test('completion follows every subtask, not the saved status or unrelated checks', () => {
+  const state = demoState();
+  const task = generatePlan(state.profile).find((task) => task.id === 'insurance')!;
+  assert.equal(getProgress(state, task).status, 'todo');
+  state.progress[task.id] = { status: 'done', checks: { '0': true, '99': true }, answer: 'Ja' };
+  assert.equal(getProgress(state, task).status, 'todo');
+  state.progress[task.id].checks['1'] = true;
+  assert.equal(getProgress(state, task).status, 'done');
+  assert.equal(summarize([task], state).percent, 100);
+  state.progress[task.id].checks['0'] = false;
+  assert.equal(getProgress(state, task).status, 'todo');
+  assert.equal(summarize([task], state).percent, 0);
+  const restored = parseStoredState(JSON.stringify(state));
+  assert.equal(getProgress(restored, task).status, 'todo');
+  restored.progress[task.id].checks['0'] = true;
+  restored.progress[task.id].status = 'waiting';
+  assert.equal(getProgress(restored, task).status, 'done');
+  assert.equal(getProgress(restored, { ...task, checks: [] }).status, 'waiting');
 });
 
 test('dates handle month boundaries, leap years and unknown dates', () => {

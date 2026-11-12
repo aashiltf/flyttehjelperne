@@ -23,9 +23,7 @@ const offersByTask: Record<string, PartnerOffer[]> = {
     product: 'Innboforsikring',
     description: 'Innboforsikringen dekker tingene dine ved blant annet tyveri, brann eller vannskader.',
     price: { amount: 149, currency: 'NOK', period: 'month' },
-    award: { label: 'Best i test', source: 'Innbo Pluss · Smarte penger, oktober 2024', href: 'https://www.gjensidige.no/forsikring/innboforsikring' },
     isDemo: true,
-    disclaimer: 'Sjekk eksisterende forsikring før du kjøper en ny.',
     link: { label: 'Kjøp forsikring', href: 'https://www.testgjensidige.no/applications/nettbutikk-privat/nettbutikk-innbo' },
   }],
 };

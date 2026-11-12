@@ -19,7 +19,7 @@ export default function Plan() {
   const view: View = params.get('visning') === 'oppgaver' ? 'oppgaver' : 'tidslinje';
   const tasks = generatePlan(state.profile);
   const stats = summarize(tasks, state);
-  const next = tasks.find((task) => getProgress(state, task.id).status !== 'done');
+  const next = tasks.find((task) => getProgress(state, task).status !== 'done');
   const selected = params.get('oppgave');
   const [showTimeline, setShowTimeline] = useState(true);
   const current = tasks.find((task) => task.id === selected) ?? next ?? tasks[0];

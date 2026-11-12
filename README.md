@@ -31,8 +31,8 @@ og overtakelse én uke før innflytting.
 - Tidslinjen viser markører for i dag, utflytting, overtakelse og innflytting.
   Med begge datoer kjent plasseres oppgavene på en felles tidsakse. Ellers er
   plasseringen skjematisk og merket som dette; hver oppgave viser hvilken milepæl
-  tidspunktet gjelder. Valgt oppgave vises i et kort under, med et
-   lite Gjensidige-påheng (demo). Forsikringsoppgaven viser Gjensidige
+   tidspunktet gjelder. Valgt oppgave vises i et kort under. Bare oppgaver med
+   egne partnertilbud viser et tilbudskort. Forsikringsoppgaven viser Gjensidige
    innboforsikring med logo og «Best i test» for Innbo Pluss, med kilde og testdato.
 - Oppgavelisten er gruppert i Formelle, Praktiske og Annet, og kan krysses av.
 - Farger fra palett v2 («lett og trygg», se `../palett/v2.html`).

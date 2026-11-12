@@ -19,9 +19,9 @@ function taskDate(profile: Parameters<typeof hasMoveDate>[0], task: MovingTask) 
 
 function useTaskProgress(task: MovingTask) {
   const { state, update } = useMoving();
-  const progress = getProgress(state, task.id);
+  const progress = getProgress(state, task);
   function change(patch: Partial<TaskProgress>) {
-    update((saved) => ({ ...saved, progress: { ...saved.progress, [task.id]: { ...getProgress(saved, task.id), ...patch } } }));
+    update((saved) => ({ ...saved, progress: { ...saved.progress, [task.id]: { ...getProgress(saved, task), ...patch } } }));
   }
   return { progress, done: progress.status === 'done', change };
 }
@@ -30,18 +30,17 @@ function useTaskProgress(task: MovingTask) {
 
 function TaskRow({ task, onShowInTimeline }: { task: MovingTask; onShowInTimeline: () => void }) {
   const { state } = useMoving();
-  const { done, change } = useTaskProgress(task);
+  const { done } = useTaskProgress(task);
   const date = taskDate(state.profile, task);
   return <li className={`flex items-start gap-3 rounded-2xl p-4 transition ${done ? 'bg-kveld-50' : 'bg-white shadow-[0_0_0_1px_var(--color-kveld-100)]'}`}>
-    <input id={`check-${task.id}`} type="checkbox" className="peer sr-only" checked={done} onChange={(event) => change({ status: event.target.checked ? 'done' : 'todo' })} />
-    <label aria-hidden="true" htmlFor={`check-${task.id}`} className={`mt-0.5 grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-full transition peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-syrin-500 ${done ? 'bg-ok-300 text-white' : 'bg-white shadow-[inset_0_0_0_2px_var(--color-kveld-300)] hover:shadow-[inset_0_0_0_2px_var(--color-syrin-500)]'}`}>
+    <span role="img" aria-label={done ? 'Gjennomført' : 'Ikke fullført'} className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${done ? 'bg-ok-300 text-white' : 'bg-white shadow-[inset_0_0_0_2px_var(--color-kveld-300)]'}`}>
       {done && <Icon name="check" className="h-4 w-4" />}
-    </label>
-    <label htmlFor={`check-${task.id}`} className="min-w-0 flex-1 cursor-pointer">
-      <span className={`block font-semibold ${done ? 'text-kveld-500 line-through decoration-kveld-300' : 'text-kveld-900'}`}>{task.title}</span>
+    </span>
+    <div className="min-w-0 flex-1">
+      <button type="button" onClick={onShowInTimeline} className={`block rounded-sm text-left font-semibold ${done ? 'text-kveld-500 line-through decoration-kveld-300' : 'text-kveld-900'}`}>{task.title}</button>
       <span className={`mt-0.5 block text-sm leading-6 ${done ? 'text-kveld-300' : 'text-kveld-500'}`}>{task.summary}</span>
       <span className="mt-1.5 block text-xs font-medium text-kveld-500">{relativeLabel(task.offset, task.dateAnchor)}{date && ` · ${date}`}</span>
-    </label>
+    </div>
     <button type="button" onClick={onShowInTimeline} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-syrin-600 hover:bg-syrin-50" aria-label={`Vis «${task.title}» i tidslinjen`}><Icon name="timeline" /></button>
   </li>;
 }
@@ -51,7 +50,7 @@ export function TaskList({ tasks, onShowInTimeline }: { tasks: MovingTask[]; onS
   return <div className="space-y-10">{categories.map((category) => {
     const group = tasks.filter((task) => task.category === category.id).sort((a, b) => taskTimelineDay(state.profile, a) - taskTimelineDay(state.profile, b));
     if (!group.length) return null;
-    const done = group.filter((task) => getProgress(state, task.id).status === 'done').length;
+    const done = group.filter((task) => getProgress(state, task).status === 'done').length;
     return <section key={category.id} aria-labelledby={`cat-${category.id}`}>
       <div className="mb-4 flex items-end justify-between gap-4">
         <div className="flex items-center gap-3"><span aria-hidden="true" className={`h-8 w-8 shrink-0 rounded-full ${categoryStyle[category.id]}`} /><div><h2 id={`cat-${category.id}`} className="text-xl font-semibold tracking-tight">{category.title}</h2><p className="text-sm text-kveld-500">{category.description}</p></div></div>
@@ -152,7 +151,7 @@ export function TimelineView({ tasks, selected, onSelect }: { tasks: MovingTask[
 
       {/* oppgaver */}
       <ol aria-label="Oppgaver i tidslinjen">{sorted.map((task, index) => {
-        const done = getProgress(state, task.id).status === 'done';
+        const done = getProgress(state, task).status === 'done';
         const active = selected === task.id;
         const cx = x(dayOf(task));
         const left = Math.min(Math.max(cx - CHIP / 2, 8), width - CHIP - 8);
@@ -171,14 +170,12 @@ export function TimelineView({ tasks, selected, onSelect }: { tasks: MovingTask[
   </div></>;
 }
 
-/* ---------- Oppgavekort med Gjensidige-påheng ---------- */
+/* ---------- Oppgavekort med valgfrie partnertilbud ---------- */
 
 export function TaskDetail({ task }: { task: MovingTask }) {
   const { state } = useMoving();
   const { progress, done, change } = useTaskProgress(task);
   const date = taskDate(state.profile, task);
-  const [more, setMore] = useState(false);
-  useEffect(() => setMore(false), [task.id]);
 
   return <div aria-live="polite">
     <article className="relative z-10 rounded-3xl bg-white p-5 shadow-[0_0_0_1px_var(--color-kveld-100),0_24px_60px_-34px_rgba(20,26,69,0.35)] sm:p-7">
@@ -202,19 +199,8 @@ export function TaskDetail({ task }: { task: MovingTask }) {
       <fieldset className="mt-5"><legend className="text-sm font-semibold">Oppgaver</legend><div className="mt-2 space-y-1">
         {task.checks.map((text, index) => <label key={text} className="flex cursor-pointer items-start gap-3 rounded-lg py-2 text-sm leading-6 text-kveld-700"><input type="checkbox" className="check-input mt-1" checked={progress.checks[String(index)] ?? false} onChange={(event) => change({ checks: { ...progress.checks, [index]: event.target.checked } })} /><span>{text}</span></label>)}
       </div></fieldset>
-      <p className="mt-3 rounded-2xl bg-kveld-50 p-3 text-sm leading-6 text-kveld-700"><strong className="font-semibold">Du er ferdig når:</strong> {task.doneWhen}</p>
-      <button type="button" className={`mt-5 ${done ? 'button-secondary' : 'button-primary'}`} onClick={() => change({ status: done ? 'todo' : 'done' })}><Icon name={done ? 'arrow' : 'check'} className="h-4 w-4" />{done ? 'Åpne oppgaven igjen' : 'Marker som gjennomført'}</button>
+      {task.doneWhen?.trim() && <p className="mt-3 rounded-2xl bg-kveld-50 p-3 text-sm leading-6 text-kveld-700"><strong className="font-semibold">Du er ferdig når:</strong> {task.doneWhen}</p>}
     </article>
-    {hasPartnerOffers(task.id) ? <PartnerOffers key={task.id} taskId={task.id} /> : <aside aria-label="Fra Gjensidige" className="mx-3 -mt-5 rounded-b-3xl bg-syrin-100 px-5 pb-4 pt-9 sm:mx-6 sm:px-6">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-syrin-600"><Icon name="shield" className="h-5 w-5" /></span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-syrin-600">Gjensidige · {task.product.name}</p>
-          <p className="mt-1 text-sm leading-6 text-kveld-700">{task.product.text}</p>
-          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className="mt-1 text-sm font-semibold text-syrin-600 underline underline-offset-4">Les mer</button>
-          {more && <p className="mt-2 text-xs leading-5 text-kveld-500">Demo: Her kan lenken gå videre til produktsiden hos Gjensidige.</p>}
-        </div>
-      </div>
-    </aside>}
+    {hasPartnerOffers(task.id) && <PartnerOffers key={task.id} taskId={task.id} />}
   </div>;
 }
