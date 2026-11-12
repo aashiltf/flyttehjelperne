@@ -50,6 +50,9 @@ test('school task includes official municipal information and NAV guidance', () 
   const tasks = generatePlan(profile);
   const school = tasks.find((task) => task.id === 'school');
   assert.ok(school?.resources);
+  assert.equal(taskTimingLabel(school), 'Frist 45 dager før innflytting');
+  assert.equal(school.offset, -45);
+  assert.equal(school.dateAnchor, 'move');
   assert.match(school.resources.description, /eksempler fra Oslo/);
   assert.deepEqual(school.resources.links.map((link) => link.href), [
     'https://www.oslo.kommune.no/skole-og-utdanning/',
@@ -61,6 +64,37 @@ test('school task includes official municipal information and NAV guidance', () 
     assert.ok(link.description);
   }
   assert.ok(tasks.filter((task) => task.id !== 'school').every((task) => !task.resources));
+});
+
+test('life insurance is a separate task in the insurance category with its own progress', () => {
+  const state = demoState();
+  const tasks = generatePlan(state.profile);
+  const housing = tasks.find((task) => task.id === 'insurance')!;
+  const life = tasks.find((task) => task.id === 'life-insurance')!;
+  assert.ok(life);
+  assert.equal(life.title, 'Kjøp livsforsikring');
+  assert.equal(life.category, 'insurance');
+  assert.equal(life.phase, housing.phase);
+  assert.equal(life.offset, housing.offset);
+  assert.equal(life.dateAnchor, housing.dateAnchor);
+  state.progress[life.id] = { status: 'todo', checks: { '0': true, '1': true, '2': true }, answer: '' };
+  assert.equal(getProgress(state, life).status, 'done');
+  assert.equal(getProgress(state, housing).status, 'todo');
+});
+
+test('handover walkthrough has ten checks for the new home without reusing old check progress', () => {
+  const state = demoState();
+  state.profile.fromTenure = 'own';
+  const task = generatePlan(state.profile).find((task) => task.id === 'old-home')!;
+  assert.equal(task.title, 'Gjennomgang ved overtakelse');
+  assert.equal(task.checks.length, 10);
+  assert.match(task.summary, /den nye boligen/);
+  assert.match(task.checks[9], /overtakelsesprotokollen/);
+  assert.equal(new Set(task.checkKeys).size, 10);
+  state.progress[task.id] = { status: 'done', checks: { '0': true, '1': true }, answer: '' };
+  assert.equal(getProgress(state, task).status, 'todo');
+  for (const key of task.checkKeys!) state.progress[task.id].checks[key] = true;
+  assert.equal(getProgress(state, task).status, 'done');
 });
 
 test('progress excludes irrelevant tasks and waiting is not completion', () => {
@@ -131,7 +165,7 @@ test('invalid stored state is rejected instead of trusted', () => {
 
 test('every task has a category, and older saved plans without move-out date still load', () => {
   const tasks = generatePlan(demoState().profile);
-  for (const task of tasks) assert.ok(['formal', 'practical', 'other'].includes(task.category));
+  for (const task of tasks) assert.ok(['formal', 'insurance', 'practical', 'other'].includes(task.category));
   assert.ok(tasks.some((task) => task.id === 'subscriptions' && task.category === 'other'));
   assert.equal(tasks.find((task) => task.id === 'address')?.category, 'formal');
   const old = demoState();

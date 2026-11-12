@@ -10,13 +10,14 @@ export const subscriptionOptions = [
 export type Subscription = typeof subscriptionOptions[number]['id'];
 export type TaskStatus = 'todo' | 'waiting' | 'done' | 'irrelevant';
 export type Phase = 'now' | 'before' | 'moving' | 'after';
-export type Category = 'formal' | 'practical' | 'other';
+export type Category = 'formal' | 'insurance' | 'practical' | 'other';
 export type DateAnchor = 'move' | 'handover';
 
 export const categories: { id: Category; title: string; description: string }[] = [
-  { id: 'formal', title: 'Formelle', description: 'Melding, søknader og avtaler med offentlige og utleier' },
-  { id: 'practical', title: 'Praktiske', description: 'Flyttefolk, pakking og selve overtakelsen' },
-  { id: 'other', title: 'Annet', description: 'Abonnementer, forsikring og det som er lett å glemme' },
+  { id: 'formal', title: 'Formelle', description: 'Søknader og avtaler med det offentlige' },
+  { id: 'insurance', title: 'Forsikring', description: 'Forsikringer for boligen og det du eier' },
+  { id: 'practical', title: 'Praktisk', description: 'Flyttefolk, vasking, pakking og selve overtakelsen' },
+  { id: 'other', title: 'Annet', description: 'Abonnementer og det som er lett å glemme' },
 ];
 
 export type MovingProfile = {
@@ -60,6 +61,7 @@ export type MovingTask = {
   why: string;
   phase: Phase;
   offset: number;
+  timingLabel?: string;
   deadlineWindow?: { earliest: number; latest: number; subject?: string };
   dateAnchor: DateAnchor;
   checks: string[];
@@ -82,7 +84,8 @@ type DraftTask = Omit<MovingTask, 'category' | 'dateAnchor'> & { dateAnchor?: Da
 const categoryById: Record<string, Category> = {
   'end-lease': 'formal', school: 'formal', address: 'formal', student: 'formal', 'new-parent': 'formal',
   'old-home': 'practical', packing: 'practical', handover: 'practical', 'prepare-handover': 'practical', 'move-in': 'practical',
-  'shared-home': 'other', insurance: 'other', utilities: 'other', subscriptions: 'other', settle: 'other', neighborhood: 'other',
+  insurance: 'insurance', 'life-insurance': 'insurance',
+  'shared-home': 'other', utilities: 'other', subscriptions: 'other', settle: 'other', neighborhood: 'other',
 };
 
 export const phases: { id: Phase; title: string; description: string }[] = [
@@ -149,11 +152,23 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     doneWhen: 'Oppsigelsen og tilbakeleveringen er avklart med utleier.',
   });
   if (p.fromTenure === 'own') tasks.push({
-    id: 'old-home', title: 'Planlegg overlevering av boligen', phase: 'now', offset: -45,
-    summary: 'Samle avtaler og avklar hva som skal følge med.',
-    why: 'Du flytter fra en eid bolig. Hvis noen skal overta den, er det lurt å avklare overleveringen tidlig.',
-    checks: ['Jeg har avklart overlevering eller annen bruk av den gamle boligen', 'Jeg vet hvilke avtaler jeg selv må avslutte eller flytte'],
-    doneWhen: 'Du vet hva som skal skje med boligen og hvilke avtaler du har ansvar for.',
+    id: 'old-home', title: 'Gjennomgang ved overtakelse', phase: 'now', offset: -45,
+    summary: 'Gå gjennom den nye boligen sammen med selger eller utleier, og dokumenter tilstanden ved overtakelsen.',
+    why: 'En grundig gjennomgang gjør det lettere å oppdage og dokumentere avvik, og avklare hvem som skal følge dem opp.',
+    checks: [
+      'Jeg har sjekket at boligen er tømt og rengjort som avtalt',
+      'Jeg har kontrollert gulv, vegger og tak for synlige skader, fuktmerker og andre avvik',
+      'Jeg har testet at vinduer, dører og låser åpner, lukker og låser som de skal',
+      'Jeg har testet kraner, toaletter og dusj, og sett etter synlige lekkasjer og tregt avløp',
+      'Jeg har sjekket sikringsskapet og testet tilgjengelig belysning og fastmontert elektrisk utstyr uten å åpne eller demontere noe',
+      'Jeg har gått gjennom oppvarming og ventilasjon, og fått forklart hvordan anleggene brukes',
+      'Jeg har kontrollert at avtalt inventar og hvitevarer følger med, og testet det som lar seg teste',
+      'Jeg har sjekket røykvarslere og slokkeutstyr, og avklart eventuelle mangler',
+      'Jeg har registrert eventuell målerstand og mottatt alle avtalte nøkler, adgangsbrikker, koder og relevant dokumentasjon',
+      'Jeg har tatt bilder av avvik, ført dem inn i overtakelsesprotokollen og avklart videre oppfølging før signering',
+    ],
+    checkKeys: ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'],
+    doneWhen: 'Boligen er gjennomgått, nøkler og dokumentasjon er mottatt, og eventuelle avvik og videre oppfølging er dokumentert i overtakelsesprotokollen.',
   });
   if (p.household === 'partner') tasks.push({
     id: 'shared-home', title: 'Ta en prat om det dere skal dele', phase: 'now', offset: -35,
@@ -164,6 +179,7 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
   });
   if (p.children && p.schoolChange) tasks.push({
     id: 'school', title: 'Undersøk skole og barnehage', phase: 'now', offset: -45,
+    timingLabel: 'Frist 45 dager før innflytting',
     summary: 'Finn riktig kontaktpunkt i kommunen dere flytter til.',
     why: 'Du har oppgitt at barn skal bytte skole eller barnehage. Søknadsprosess og frister må avklares med kommunen.',
     checks: ['Jeg har undersøkt kommunens informasjon om skole eller barnehage', 'Jeg har avklart søknad, dokumentasjon og aktuelle frister'],
@@ -184,6 +200,12 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     checks: ['Jeg har kjøpt husforsikringen til den nye boligen', 'Jeg har kjøpt innboforsikring til den nye boligen'],
     question: { text: 'Har du eller en du flytter med innboforsikring i dag?', options: ['Ja', 'Nei', 'Vet ikke ennå'] },
     partner: true,
+  }, {
+    id: 'life-insurance', title: 'Kjøp livsforsikring', phase: 'before', offset: -21, dateAnchor: 'handover',
+    summary: 'Vurder om du trenger livsforsikring når du flytter. Behovet avhenger av gjeld, økonomi og om andre er avhengige av inntekten din.',
+    why: 'Livsforsikring kan gi økonomisk trygghet til dine etterlatte. Sjekk hva du allerede har privat eller gjennom arbeidsgiver før du kjøper.',
+    checks: ['Jeg har sjekket hvilke livsforsikringer jeg allerede har', 'Jeg har vurdert behov og forsikringssum ut fra gjeld og familiesituasjon', 'Jeg har kjøpt livsforsikring dersom jeg trenger det'],
+    doneWhen: 'Du har vurdert behovet og kjøpt livsforsikring dersom det er aktuelt for deg.',
   });
   tasks.push({
     id: 'utilities', title: 'Finn ut hva som følger med boligen', phase: 'before', offset: -14, dateAnchor: 'handover',
@@ -300,6 +322,7 @@ export function relativeLabel(offset: number, anchor: DateAnchor = 'move'): stri
 }
 
 export function taskTimingLabel(task: MovingTask): string {
+  if (task.timingLabel) return task.timingLabel;
   return task.deadlineWindow
     ? `Frist${task.deadlineWindow.subject ? ` for ${task.deadlineWindow.subject}` : ''}: ${Math.abs(task.deadlineWindow.earliest)} dager før–${task.deadlineWindow.latest} dager etter innflytting`
     : relativeLabel(task.offset, task.dateAnchor);

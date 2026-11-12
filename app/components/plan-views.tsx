@@ -6,6 +6,7 @@ import { addDays, categories, hasMoveDate, getProgress, taskTimingLabel, taskDea
 
 const categoryStyle: Record<Category, string> = {
   formal: 'bg-himmel text-kveld-900',
+  insurance: 'bg-syrin-100 text-kveld-900',
   practical: 'bg-eng text-kveld-900',
   other: 'bg-sol text-kveld-900',
 };
@@ -49,7 +50,9 @@ function TaskRow({ task, onShowInTimeline }: { task: MovingTask; onShowInTimelin
 export function TaskList({ tasks, onShowInTimeline }: { tasks: MovingTask[]; onShowInTimeline: (id: string) => void }) {
   const { state } = useMoving();
   return <div className="space-y-10">{categories.map((category) => {
-    const group = tasks.filter((task) => task.category === category.id).sort((a, b) => taskTimelineDay(state.profile, a) - taskTimelineDay(state.profile, b));
+    const group = tasks.filter((task) => task.category === category.id).sort((a, b) =>
+      Number(b.id === 'address') - Number(a.id === 'address') || taskTimelineDay(state.profile, a) - taskTimelineDay(state.profile, b)
+    );
     if (!group.length) return null;
     const done = group.filter((task) => getProgress(state, task).status === 'done').length;
     return <section key={category.id} aria-labelledby={`cat-${category.id}`}>
