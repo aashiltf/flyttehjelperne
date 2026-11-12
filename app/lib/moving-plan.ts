@@ -2,6 +2,13 @@ export type Household = '' | 'alone' | 'partner';
 export type Tenure = '' | 'rent' | 'own';
 export type TaskStatus = 'todo' | 'waiting' | 'done' | 'irrelevant';
 export type Phase = 'now' | 'before' | 'moving' | 'after';
+export type Category = 'formal' | 'practical' | 'other';
+
+export const categories: { id: Category; title: string; description: string }[] = [
+  { id: 'formal', title: 'Formelle', description: 'Melding, søknader og avtaler med offentlige og utleier' },
+  { id: 'practical', title: 'Praktiske', description: 'Flyttefolk, pakking og selve overtakelsen' },
+  { id: 'other', title: 'Annet', description: 'Abonnementer, forsikring og det som er lett å glemme' },
+];
 
 export type MovingProfile = {
   household: Household;
@@ -10,6 +17,7 @@ export type MovingProfile = {
   fromTenure: Tenure;
   toTenure: Tenure;
   moveDate: string;
+  moveOutDate: string;
   dateUnknown: boolean;
   student: boolean;
   children: boolean;
@@ -43,7 +51,31 @@ export type MovingTask = {
   doneWhen: string;
   question?: { text: string; options: string[] };
   partner?: boolean;
+  category: Category;
+  product: { name: string; text: string };
 };
+
+type DraftTask = Omit<MovingTask, 'category' | 'product'>;
+
+const categoryById: Record<string, Category> = {
+  'end-lease': 'formal', school: 'formal', address: 'formal', student: 'formal', 'new-parent': 'formal',
+  'old-home': 'practical', packing: 'practical', handover: 'practical',
+  'shared-home': 'other', insurance: 'other', utilities: 'other', subscriptions: 'other', settle: 'other', neighborhood: 'other',
+};
+
+function productFor(id: string, p: MovingProfile): MovingTask['product'] {
+  switch (id) {
+    case 'insurance': return { name: 'Innboforsikring', text: p.household === 'partner' ? 'Én innboforsikring kan dekke hele husstanden. Sjekk at begge står på avtalen.' : 'Innboforsikringen følger deg til ny adresse. Sjekk at boligstørrelse og dekning stemmer.' };
+    case 'handover': return p.toTenure === 'own' ? { name: 'Husforsikring', text: 'Eier du boligen, må huset være forsikret fra overtakelsesdagen.' } : { name: 'Innboforsikring', text: 'Ta bilder av tingene dine når du pakker ut. Det gjør et eventuelt skadeoppgjør enklere.' };
+    case 'old-home': return { name: 'Husforsikring', text: 'Avslutt eller overfør husforsikringen når den nye eieren overtar.' };
+    case 'shared-home': return { name: 'Samle forsikringene', text: 'Flytter dere sammen, kan dere ofte samle forsikringene og unngå å betale dobbelt.' };
+    case 'address': return { name: 'Oppdater adressen hos Gjensidige', text: 'Bil, innbo og reise henger sammen med adressen din. Endre den på Min side.' };
+    case 'packing': return { name: 'Verdisakforsikring', text: 'Smykker, kamera og andre verdisaker kan trenge ekstra dekning, også under flyttingen.' };
+    case 'school': return { name: 'Barneforsikring', text: 'Nytt nabolag og nye aktiviteter. Sjekk at barna er godt dekket.' };
+    case 'settle': return { name: 'Gjensidige-appen', text: 'Se alle forsikringene dine samlet og meld skade direkte fra telefonen.' };
+    default: return { name: 'Flytter du?', text: 'Vi hjelper deg å sjekke at forsikringene dine følger med til ny adresse.' };
+  }
+}
 
 export const phases: { id: Phase; title: string; description: string }[] = [
   { id: 'now', title: 'Kom i gang', description: 'De første avklaringene' },
@@ -59,11 +91,16 @@ export function emptyState(): MovingState {
     created: false,
     profile: {
       household: '', fromAddress: '', toAddress: '', fromTenure: '', toTenure: '',
-      moveDate: '', dateUnknown: false, student: false, children: false,
+      moveDate: '', moveOutDate: '', dateUnknown: false, student: false, children: false,
       schoolChange: false, newParent: false, retired: false,
     },
     progress: {},
   };
+}
+
+/** Innflyttingsdato er valgfri. Uten den vises planen relativt til flyttedagen. */
+export function hasMoveDate(profile: MovingProfile): boolean {
+  return !profile.dateUnknown && validDate(profile.moveDate);
 }
 
 export function validDate(value: string): boolean {
@@ -82,7 +119,10 @@ export function profileErrors(profile: MovingProfile, step: number): string[] {
       !profile.toTenure && 'Velg om du skal leie eller eie den nye boligen.',
     ].filter((message): message is string => Boolean(message));
   }
-  return profile.dateUnknown || validDate(profile.moveDate) ? [] : ['Velg en gyldig flyttedato, eller «Datoen er ikke bestemt».'];
+  return [
+    profile.moveDate && !validDate(profile.moveDate) && 'Innflyttingsdatoen er ikke gyldig.',
+    profile.moveOutDate && !validDate(profile.moveOutDate) && 'Utflyttingsdatoen er ikke gyldig.',
+  ].filter((message): message is string => Boolean(message));
 }
 
 export function isProfileComplete(profile: MovingProfile): boolean {
@@ -90,7 +130,7 @@ export function isProfileComplete(profile: MovingProfile): boolean {
 }
 
 export function generatePlan(p: MovingProfile): MovingTask[] {
-  const tasks: MovingTask[] = [];
+  const tasks: DraftTask[] = [];
   if (p.fromTenure === 'rent') tasks.push({
     id: 'end-lease', title: 'Avklar oppsigelse av leieboligen', phase: 'now', offset: -60,
     summary: 'Finn oppsigelsesfristen og avtal veien videre med utleier.',
@@ -142,6 +182,12 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     checks: ['Jeg har sjekket hvordan og når jeg skal melde flytting til Folkeregisteret', 'Jeg har avklart adresseendring og eventuell videresending hos Posten', 'Jeg har fulgt opp andre som trenger adressen min'],
     doneWhen: 'Du har fulgt opp adresseendringene som gjelder for deg hos de aktuelle tjenestene.',
   }, {
+    id: 'subscriptions', title: 'Endre eller si opp abonnementer', phase: 'before', offset: -10,
+    summary: 'Strøm, internett, aviser, treningssenter og andre faste avtaler.',
+    why: 'Mange abonnementer følger adressen din. Noen kan flyttes, andre må sies opp med oppsigelsestid.',
+    checks: ['Jeg har listet opp abonnementene jeg betaler for', 'Jeg har flyttet eller sagt opp det som berøres av flyttingen'],
+    doneWhen: 'Abonnementene dine er flyttet, sagt opp eller bekreftet på ny adresse.',
+  }, {
     id: 'packing', title: 'Gjør klart til flyttedagen', phase: 'before', offset: -7,
     summary: 'Planlegg transport, pakking og hvem som hjelper til.',
     why: 'En enkel praktisk plan gjør det lettere å holde oversikten når dagen kommer.',
@@ -181,7 +227,8 @@ export function generatePlan(p: MovingProfile): MovingTask[] {
     checks: ['Jeg har sett på kommunens eller lokale foreningers aktivitetstilbud'],
     doneWhen: 'Du har funnet ut om det er noen lokale tilbud du vil utforske videre.',
   });
-  return phases.flatMap((phase) => tasks.filter((task) => task.phase === phase.id));
+  return phases.flatMap((phase) => tasks.filter((task) => task.phase === phase.id))
+    .map((task) => ({ ...task, category: categoryById[task.id] ?? 'other', product: productFor(task.id, p) }));
 }
 
 export function getProgress(state: MovingState, id: string): TaskProgress {
@@ -202,12 +249,41 @@ export function suggestedDate(moveDate: string, offset: number): string {
   return new Intl.DateTimeFormat('nb-NO', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date);
 }
 
+export function relativeLabel(offset: number): string {
+  if (offset === 0) return 'På innflyttingsdagen';
+  const days = Math.abs(offset);
+  const amount = days >= 14 && days % 7 === 0 ? `${days / 7} uker` : days === 7 ? '1 uke' : `${days} dager`;
+  return `${amount} ${offset < 0 ? 'før' : 'etter'} innflytting`;
+}
+
+export function addDays(value: string, offset: number): Date | null {
+  if (!validDate(value)) return null;
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offset);
+  return date;
+}
+
+export function toIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+export function daysBetween(from: string, to: string): number {
+  return Math.round((new Date(`${to}T12:00:00Z`).getTime() - new Date(`${from}T12:00:00Z`).getTime()) / 86400000);
+}
+
+export function formatDate(value: string, withYear = false): string {
+  if (!validDate(value)) return '';
+  return new Intl.DateTimeFormat('nb-NO', { day: 'numeric', month: 'short', ...(withYear ? { year: 'numeric' } : {}), timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`));
+}
+
 export function demoState(now = new Date()): MovingState {
   const state = emptyState();
   const date = new Date(now);
   date.setDate(date.getDate() + 35);
-  const moveDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  return { ...state, created: true, profile: { ...state.profile, household: 'partner', fromAddress: 'Markveien 12, Oslo', toAddress: 'Bøkkerveien 8, Oslo', fromTenure: 'rent', toTenure: 'own', moveDate } };
+  const moveDate = toIsoDate(date);
+  const out = new Date(date);
+  out.setDate(out.getDate() + 3);
+  return { ...state, created: true, profile: { ...state.profile, household: 'partner', fromAddress: 'Markveien 12, Oslo', toAddress: 'Bøkkerveien 8, Oslo', fromTenure: 'rent', toTenure: 'own', moveDate, moveOutDate: toIsoDate(out) } };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -226,9 +302,11 @@ export function parseStoredState(raw: string): MovingState {
   const profile: MovingProfile = {
     household: p.household as Household, fromTenure: p.fromTenure as Tenure, toTenure: p.toTenure as Tenure,
     fromAddress: p.fromAddress as string, toAddress: p.toAddress as string, moveDate: p.moveDate as string,
+    moveOutDate: typeof p.moveOutDate === 'string' && p.moveOutDate.length <= 20 ? p.moveOutDate : '',
     dateUnknown: p.dateUnknown as boolean, student: p.student as boolean, children: p.children as boolean,
     schoolChange: p.schoolChange as boolean, newParent: p.newParent as boolean, retired: p.retired as boolean,
   };
+  if (profile.moveOutDate && !validDate(profile.moveOutDate)) throw new Error('Ugyldig utflyttingsdato');
   if (profile.moveDate && !validDate(profile.moveDate)) throw new Error('Ugyldig dato');
   if (value.created && !isProfileComplete(profile)) throw new Error('Ufullstendig plan');
   const progress: Record<string, TaskProgress> = {};

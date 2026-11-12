@@ -63,3 +63,13 @@ test('invalid stored state is rejected instead of trusted', () => {
   assert.throws(() => parseStoredState(JSON.stringify({ ...emptyState(), created: true })));
   assert.throws(() => parseStoredState(JSON.stringify({ ...demoState(), progress: { insurance: { status: 'done', checks: { '0': 'yes' }, answer: '' } } })));
 });
+
+test('every task has a category, and older saved plans without move-out date still load', () => {
+  const tasks = generatePlan(demoState().profile);
+  for (const task of tasks) assert.ok(['formal', 'practical', 'other'].includes(task.category));
+  assert.ok(tasks.some((task) => task.id === 'subscriptions' && task.category === 'other'));
+  assert.equal(tasks.find((task) => task.id === 'address')?.category, 'formal');
+  const old = demoState();
+  const { moveOutDate: _, ...profile } = old.profile;
+  assert.equal(parseStoredState(JSON.stringify({ ...old, profile })).profile.moveOutDate, '');
+});

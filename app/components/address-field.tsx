@@ -46,13 +46,13 @@ export function AddressField({ label, value, onChange }: { label: string; value:
   return <div className="relative">
     <label htmlFor={id} className="field-label">{label}</label>
     <div className="relative">
-      <Icon name="pin" className="pointer-events-none absolute left-3.5 top-3.5 text-slate-400" />
+      <Icon name="pin" className="pointer-events-none absolute left-3.5 top-3.5 text-kveld-300" />
       <input id={id} className="text-input pl-11" value={value} maxLength={200} required autoComplete="off" placeholder="Gateadresse og sted"
         role="combobox" aria-expanded={open && suggestions.length > 0} aria-autocomplete="list" aria-controls={`${id}-suggestions`} aria-activedescendant={active >= 0 ? `${id}-option-${active}` : undefined} aria-describedby={`${id}-help`}
         onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
         onChange={(event) => { onChange(event.target.value); setOpen(true); }}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') { setOpen(false); setActive(-1); }
+          if (event.key === 'Escape') { if (open && suggestions.length) event.preventDefault(); setOpen(false); setActive(-1); }
           if (suggestions.length && open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
             event.preventDefault();
             setActive((index) => event.key === 'ArrowDown' ? (index + 1) % suggestions.length : (index <= 0 ? suggestions.length - 1 : index - 1));
@@ -60,12 +60,12 @@ export function AddressField({ label, value, onChange }: { label: string; value:
           if (event.key === 'Enter' && open && active >= 0 && suggestions[active]) { event.preventDefault(); choose(suggestions[active]); }
         }} />
     </div>
-    {open && suggestions.length > 0 && <ul id={`${id}-suggestions`} role="listbox" aria-label={`Adresseforslag for ${label}`} className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
-      {suggestions.map((address, index) => <li key={`${address.adressetekst}-${address.postnummer}`} id={`${id}-option-${index}`} role="option" aria-selected={active === index} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(address)} className={`cursor-pointer rounded-lg px-3 py-2.5 text-sm hover:bg-teal-50 ${active === index ? 'bg-teal-50' : ''}`}>
-        <span className="block font-semibold">{address.adressetekst}</span><span className="text-slate-500">{address.postnummer} {address.poststed}</span>
+    {open && suggestions.length > 0 && <ul id={`${id}-suggestions`} role="listbox" aria-label={`Adresseforslag for ${label}`} className="absolute z-20 mt-2 w-full rounded-xl border border-kveld-200 bg-white p-1 shadow-xl">
+      {suggestions.map((address, index) => <li key={`${address.adressetekst}-${address.postnummer}`} id={`${id}-option-${index}`} role="option" aria-selected={active === index} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(address)} className={`cursor-pointer rounded-lg px-3 py-2.5 text-sm hover:bg-syrin-50 ${active === index ? 'bg-syrin-50' : ''}`}>
+        <span className="block font-semibold">{address.adressetekst}</span><span className="text-kveld-500">{address.postnummer} {address.poststed}</span>
       </li>)}
     </ul>}
-    <p id={`${id}-help`} role="status" className="mt-2 text-xs leading-5 text-slate-500">
+    <p id={`${id}-help`} role="status" className="mt-2 text-xs leading-5 text-kveld-500">
       {status === 'loading' ? 'Søker etter adresser …' : status === 'error' ? 'Adressesøket er utilgjengelig. Du kan skrive adressen selv.' : status === 'empty' ? 'Ingen forslag funnet. Du kan bruke adressen du har skrevet.' : 'Adresseforslag fra Kartverket. Du kan også skrive adressen selv.'}
     </p>
   </div>;

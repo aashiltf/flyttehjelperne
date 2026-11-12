@@ -16,11 +16,16 @@ samboerflytting fra leid til eid bolig, med innflytting 35 dager frem i tid.
 
 ## Demoens funksjoner
 
-- Tre kartleggingssteg, med manuell adresse eller adresseforslag fra Kartverket.
-- Personlig tidslinje på `/tidslinje`, med anbefalte tidspunkter og neste steg.
-- Oppgavesvar, avkryssinger og statusene gjenstår, venter, ferdig og gjelder ikke.
-- Filtrering og fremdrift basert på relevante oppgaver.
-- Et generisk forsikringsrelatert partnertilbud, tydelig merket demo.
+- Forside med to utvidbare felt: «Hvor og når» (fra/til, leie/eie, ut- og
+  innflyttingsdato) og «Hvem flytter du med». Feltene åpnes ved klikk inni og
+  lukkes ved klikk utenfor, og viser et sammendrag når de er lukket.
+- Planen på `/tidslinje` kan vises som tidslinje eller som oppgaveliste
+  (`?visning=oppgaver`).
+- Tidslinjen viser oppgavene i forhold til innflyttingsdato, med markering av
+  i dag, utflytting og innflytting. Valgt oppgave vises i et kort under, med et
+  lite Gjensidige-påheng (demo).
+- Oppgavelisten er gruppert i Formelle, Praktiske og Annet, og kan krysses av.
+- Farger fra palett v2 («lett og trygg», se `../palett/v2.html`).
 - «Start på nytt» for å slette planen eller laste eksempelreisen på nytt.
 
 ## Lagring og avgrensning

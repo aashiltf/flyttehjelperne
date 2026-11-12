@@ -1,33 +1,63 @@
 @import "tailwindcss";
 
+/* Palett v2 – «lett og trygg flytting» (se ../palett/v2.html) */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-kveld-50: #F5F7FC;
+  --color-kveld-100: #E9EDF7;
+  --color-kveld-200: #D3D9EC;
+  --color-kveld-300: #A9B2D3;
+  --color-kveld-500: #4A5280;
+  --color-kveld-700: #262C5C;
+  --color-kveld-900: #141A45;
+
+  --color-syrin-50: #F7F5FF;
+  --color-syrin-100: #F1EEFF;
+  --color-syrin-200: #DCD5FF;
+  --color-syrin-300: #A89BFF;
+  --color-syrin-500: #6A50E8;
+  --color-syrin-600: #5B43D6;
+
+  --color-sol: #FBF6B4;
+  --color-himmel: #D6ECFF;
+  --color-eng: #C8F2DA;
+
+  --color-feil-100: #FDE6E6;
+  --color-feil-300: #E5484D;
+  --color-feil-500: #8A1E24;
+  --color-varsel-100: #FFF3CF;
+  --color-varsel-300: #F2B53A;
+  --color-varsel-500: #6B4A00;
+  --color-ok-100: #E2F7EC;
+  --color-ok-300: #2BB673;
+  --color-ok-500: #0D6B4A;
 }
 
 html,
 body {
-  @apply bg-[#f5f8f7];
+  @apply bg-white text-kveld-900;
 }
 
 @layer base {
   button, a, input, summary { -webkit-tap-highlight-color: transparent; }
   button:not(:disabled), summary { cursor: pointer; }
-  :focus-visible { outline: 3px solid #0f766e; outline-offset: 4px; }
+  :focus-visible { outline: 3px solid var(--color-syrin-500); outline-offset: 3px; }
   input[type="date"] { min-width: 0; }
   input[type="checkbox"], input[type="radio"] { flex-shrink: 0; }
 }
 
 @layer components {
-  .eyebrow { @apply text-xs font-bold uppercase tracking-[0.15em] text-teal-700; }
-  .field-label { @apply mb-2 block text-sm font-semibold text-slate-700; }
-  .text-input { @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-800 shadow-xs transition placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-3 focus:ring-teal-100 disabled:bg-slate-100 disabled:text-slate-500; }
-  .choice-card { @apply block cursor-pointer rounded-2xl border-2 border-slate-200 bg-white p-5 transition hover:border-teal-400 focus-within:ring-3 focus-within:ring-teal-100; }
-  .choice-small { @apply flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium transition hover:border-teal-400; }
-  .choice-selected { @apply border-teal-600 bg-teal-50/60; }
-  .check-input { @apply h-4 w-4 accent-teal-700; }
-  .button-primary { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70; }
-  .button-secondary { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.08em] text-syrin-600; }
+  .field-label { @apply mb-2 block text-sm font-semibold text-kveld-700; }
+  .text-input { @apply w-full rounded-xl border border-kveld-200 bg-white px-4 py-3 text-base text-kveld-900 transition placeholder:text-kveld-300 focus:border-syrin-500 focus:outline-none focus:ring-3 focus:ring-syrin-100 disabled:bg-kveld-50 disabled:text-kveld-300; }
+  .choice-card { @apply block cursor-pointer rounded-2xl border-2 border-kveld-100 bg-white p-4 transition hover:border-syrin-300 focus-within:ring-3 focus-within:ring-syrin-100; }
+  .choice-small { @apply flex cursor-pointer items-center gap-3 rounded-xl border border-kveld-100 bg-white px-4 py-3 text-sm font-medium text-kveld-700 transition hover:border-syrin-300; }
+  .choice-selected { @apply border-syrin-500 bg-syrin-50; }
+  .check-input { @apply h-4 w-4 accent-syrin-500; }
+  .button-primary { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-syrin-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-syrin-600 disabled:cursor-wait disabled:opacity-70; }
+  .button-secondary { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-kveld-900 shadow-[inset_0_0_0_1.5px_var(--color-kveld-300)] transition hover:bg-kveld-50; }
 }
 
 @media (prefers-reduced-motion: reduce) {
