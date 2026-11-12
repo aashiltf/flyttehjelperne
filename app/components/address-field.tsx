@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { searchAddresses, type Address } from '~/lib/address-search';
 import { Icon } from './ui';
-
-type Address = { adressetekst: string; postnummer: string; poststed: string };
 
 export function AddressField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const id = useId();
@@ -9,6 +8,8 @@ export function AddressField({ label, value, onChange }: { label: string; value:
   const [status, setStatus] = useState<'idle' | 'loading' | 'empty' | 'error'>('idle');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
+  const [manual, setManual] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
   const selected = useRef(value);
   const requestId = useRef(0);
 
@@ -16,24 +17,34 @@ export function AddressField({ label, value, onChange }: { label: string; value:
     const request = ++requestId.current;
     setSuggestions([]);
     setActive(-1);
+    if (manual) return;
     setStatus('idle');
     if (value.trim().length < 3 || value === selected.current || !open) return;
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
       setStatus('loading');
       try {
-        const response = await fetch(`https://ws.geonorge.no/adresser/v1/sok?fuzzy=true&treffPerSide=5&sok=${encodeURIComponent(value)}`, { signal: controller.signal });
-        if (!response.ok) throw new Error('Adressesøk feilet');
-        const data: unknown = await response.json();
-        if (typeof data !== 'object' || data === null || !('adresser' in data) || !Array.isArray(data.adresser)) throw new Error('Ugyldig adressesvar');
-        const addresses = data.adresser.filter((address: unknown): address is Address => typeof address === 'object' && address !== null && 'adressetekst' in address && typeof address.adressetekst === 'string' && 'postnummer' in address && typeof address.postnummer === 'string' && 'poststed' in address && typeof address.poststed === 'string');
+        const addresses = await searchAddresses(value, controller.signal);
         if (request === requestId.current) { setSuggestions(addresses); setStatus(addresses.length ? 'idle' : 'empty'); }
       } catch {
-        if (!controller.signal.aborted && request === requestId.current) setStatus('error');
+        if (!controller.signal.aborted && request === requestId.current) {
+          setStatus('error');
+          setManual(true);
+          setOpen(false);
+        }
       }
     }, 300);
     return () => { window.clearTimeout(timeout); controller.abort(); };
-  }, [value, open]);
+  }, [value, open, manual]);
+
+  function toggleManual() {
+    setManual(!manual);
+    setStatus('idle');
+    setSuggestions([]);
+    setActive(-1);
+    setOpen(manual);
+    input.current?.focus();
+  }
 
   function choose(address: Address) {
     const text = `${address.adressetekst}, ${address.postnummer} ${address.poststed}`;
@@ -47,10 +58,10 @@ export function AddressField({ label, value, onChange }: { label: string; value:
     <label htmlFor={id} className="field-label">{label}</label>
     <div className="relative">
       <Icon name="pin" className="pointer-events-none absolute left-3.5 top-3.5 text-kveld-300" />
-      <input id={id} className="text-input pl-11" value={value} maxLength={200} required autoComplete="off" placeholder="Gateadresse og sted"
-        role="combobox" aria-expanded={open && suggestions.length > 0} aria-autocomplete="list" aria-controls={`${id}-suggestions`} aria-activedescendant={active >= 0 ? `${id}-option-${active}` : undefined} aria-describedby={`${id}-help`}
-        onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
-        onChange={(event) => { onChange(event.target.value); setOpen(true); }}
+      <input ref={input} id={id} className="text-input pl-11" value={value} maxLength={200} required autoComplete="off" placeholder={manual ? 'Gateadresse, postnummer og sted' : 'Gateadresse og sted'}
+        role={manual ? undefined : 'combobox'} aria-expanded={manual ? undefined : open && suggestions.length > 0} aria-autocomplete={manual ? undefined : 'list'} aria-controls={!manual && open && suggestions.length > 0 ? `${id}-suggestions` : undefined} aria-activedescendant={!manual && open && active >= 0 ? `${id}-option-${active}` : undefined} aria-describedby={`${id}-help`}
+        onFocus={() => { if (!manual) setOpen(true); }} onBlur={() => setOpen(false)}
+        onChange={(event) => { onChange(event.target.value); if (!manual) setOpen(true); }}
         onKeyDown={(event) => {
           if (event.key === 'Escape') { if (open && suggestions.length) event.preventDefault(); setOpen(false); setActive(-1); }
           if (suggestions.length && open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
@@ -65,8 +76,12 @@ export function AddressField({ label, value, onChange }: { label: string; value:
         <span className="block font-semibold">{address.adressetekst}</span><span className="text-kveld-500">{address.postnummer} {address.poststed}</span>
       </li>)}
     </ul>}
-    <p id={`${id}-help`} role="status" className={status === 'idle' ? 'sr-only' : 'mt-2 text-xs leading-5 text-kveld-500'}>
-      {status === 'loading' ? 'Søker etter adresser …' : status === 'error' ? 'Adressesøket er utilgjengelig. Du kan skrive adressen selv.' : status === 'empty' ? 'Ingen forslag funnet. Du kan bruke adressen du har skrevet.' : ''}
+    <p id={`${id}-help`} role="status" className={status === 'idle' && !manual ? 'sr-only' : 'mt-2 text-xs leading-5 text-kveld-500'}>
+      {manual ? `${status === 'error' ? 'Adressesøket er utilgjengelig. ' : ''}Skriv inn gateadresse, postnummer og sted selv. Du kan fortsette uten å velge et adresseforslag.` : status === 'loading' ? 'Søker etter adresser …' : status === 'empty' ? 'Ingen forslag funnet. Du kan bruke adressen du har skrevet.' : ''}
     </p>
+    <button type="button" className="mt-2 min-h-11 rounded px-1 text-xs font-semibold text-syrin-600 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-syrin-500" onClick={toggleManual}>
+      {manual ? 'Prøv adressesøk igjen' : 'Skriv inn adresse manuelt'}
+      <span className="sr-only"> – {label.toLowerCase()}</span>
+    </button>
   </div>;
 }
